@@ -1,8 +1,8 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Screen, Txt, SandRing, ProBadge, TabBar, Icon } from '../src/components';
-import { colors, fonts, shadows } from '../src/theme';
+import { Screen, Txt, SandRing, ProBadge, Icon } from '../../src/components';
+import { colors, fonts, shadows } from '../../src/theme';
 
 type Sport = {
   name: string;
@@ -137,7 +137,6 @@ export default function Profile() {
         <Icon name="chevronLeft" size={16} color="rgba(255,255,255,.6)" strokeWidth={2} />
       </Pressable>
 
-      <TabBar active="profile" />
     </Screen>
   );
 }

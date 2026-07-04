@@ -3,14 +3,10 @@ import { useRouter } from 'expo-router';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
 import { Screen, Txt, Icon, SandRing, StatusDot } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
+import { useStore } from '../src/store';
 
-type Player = { letter: string; name: string; color: string; host?: boolean; rotate: number };
-
-const PLAYERS: Player[] = [
-  { letter: 'ע', name: 'עומר', color: colors.petrol, host: true, rotate: 0 },
-  { letter: 'ד', name: 'דניאל', color: colors.live, rotate: 60 },
-  { letter: 'נ', name: 'נועה', color: colors.amber, rotate: 150 },
-];
+const CIRCLE_ID = 'frishman';
+const RING_ROTATIONS = [0, 60, 150, 230];
 
 function HeroRingDecor() {
   return (
@@ -67,6 +63,15 @@ function InfoRow({
 
 export default function CircleDetail() {
   const router = useRouter();
+  const circle = useStore((s) => s.circleById(CIRCLE_ID))!;
+  const joined = useStore((s) => s.isJoined(CIRCLE_ID));
+  const joinCircle = useStore((s) => s.joinCircle);
+  const missing = circle.capacity - circle.players.length;
+
+  const onJoin = () => {
+    if (!joined) joinCircle(CIRCLE_ID);
+    router.push('/chat');
+  };
 
   return (
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }}>
@@ -83,9 +88,9 @@ export default function CircleDetail() {
         </View>
 
         <View style={styles.badgeRow}>
-          <View style={styles.stateBadge}>
+          <View style={[styles.stateBadge, joined && { backgroundColor: colors.live }]}>
             <StatusDot color="#fff" size={7} />
-            <Txt style={styles.stateBadgeTxt}>חסר שחקן</Txt>
+            <Txt style={styles.stateBadgeTxt}>{joined ? 'משחק חי · אתה בפנים' : 'חסר שחקן'}</Txt>
           </View>
           <View style={styles.softBadge}>
             <Txt style={styles.softBadgeTxt}>פוצ'יוולי</Txt>
@@ -104,26 +109,32 @@ export default function CircleDetail() {
         <View>
           <View style={styles.playersHeader}>
             <Txt style={styles.playersTitle}>שחקנים במעגל</Txt>
-            <Txt style={styles.playersCount}>3 מתוך 4 — חסר אחד!</Txt>
+            <Txt style={[styles.playersCount, missing === 0 && { color: colors.liveDeep }]}>
+              {missing > 0
+                ? `${circle.players.length} מתוך ${circle.capacity} — חסר אחד!`
+                : `${circle.players.length}/${circle.capacity} — מלא. משחקים!`}
+            </Txt>
           </View>
           <View style={styles.playersRow}>
-            {PLAYERS.map((p) => (
-              <View key={p.letter} style={styles.playerCol}>
-                <SandRing size={64} color={colors.live} strokeWidth={2.5} rotate={p.rotate} variant={1}>
-                  <View style={[styles.playerAvatar, { backgroundColor: p.color }]}>
-                    <Txt style={styles.playerAvatarTxt}>{p.letter}</Txt>
+            {circle.players.map((p, i) => (
+              <View key={p.id} style={styles.playerCol}>
+                <SandRing size={64} color={colors.live} strokeWidth={2.5} rotate={RING_ROTATIONS[i % RING_ROTATIONS.length]} variant={1}>
+                  <View style={[styles.playerAvatar, { backgroundColor: p.avatarColor }]}>
+                    <Txt style={styles.playerAvatarTxt}>{p.avatarInitial}</Txt>
                   </View>
                 </SandRing>
                 <Txt style={styles.playerName}>{p.name}</Txt>
-                {p.host && <Txt style={styles.playerHost}>מארח</Txt>}
+                {p.id === circle.hostId && <Txt style={styles.playerHost}>מארח</Txt>}
               </View>
             ))}
-            <View style={styles.playerCol}>
-              <View style={styles.emptySlot}>
-                <Txt style={styles.emptySlotPlus}>+</Txt>
-              </View>
-              <Txt style={styles.emptySlotLabel}>זה אתה?</Txt>
-            </View>
+            {missing > 0 && (
+              <Pressable style={styles.playerCol} onPress={onJoin}>
+                <View style={styles.emptySlot}>
+                  <Txt style={styles.emptySlotPlus}>+</Txt>
+                </View>
+                <Txt style={styles.emptySlotLabel}>זה אתה?</Txt>
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -169,8 +180,11 @@ export default function CircleDetail() {
 
       {/* footer */}
       <View style={styles.footer}>
-        <Pressable style={styles.cta} onPress={() => router.push('/chat')}>
-          <Txt style={styles.ctaTxt}>אני בפנים</Txt>
+        <Pressable
+          style={[styles.cta, joined && { backgroundColor: colors.live, shadowColor: colors.live }]}
+          onPress={onJoin}
+        >
+          <Txt style={styles.ctaTxt}>{joined ? 'אתה בפנים ✓ — פתח צ׳אט' : 'אני בפנים'}</Txt>
         </Pressable>
         <Pressable style={styles.shareBtn} onPress={() => router.push('/chat')}>
           <Icon name="share" size={20} color={colors.petrol} strokeWidth={1.7} />

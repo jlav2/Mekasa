@@ -2,8 +2,9 @@ import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Txt, Icon, TabBar, SectionLabel } from '../src/components';
-import { colors, fonts } from '../src/theme';
+import { Txt, Icon, SectionLabel } from '../../src/components';
+import { colors, fonts } from '../../src/theme';
+import { useStore } from '../../src/store';
 
 function RingBadge({
   size = 48,
@@ -40,13 +41,17 @@ function RingBadge({
 export default function Notifications() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const notifications = useStore((s) => s.notifications);
+  const markAllRead = useStore((s) => s.markAllRead);
+  const joinCircle = useStore((s) => s.joinCircle);
+  const unread = (id: string) => notifications.find((n) => n.id === id)?.unread;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
       <View style={{ paddingTop: insets.top + 18, paddingHorizontal: 22 }}>
         <View style={styles.titleRow}>
           <Txt style={styles.title}>התראות</Txt>
-          <Pressable>
+          <Pressable onPress={markAllRead} accessibilityRole="button">
             <Txt style={styles.markRead}>סמן הכול כנקרא</Txt>
           </Pressable>
         </View>
@@ -72,7 +77,13 @@ export default function Notifications() {
             </View>
           </View>
           <View style={styles.hotCtaRow}>
-            <Pressable style={styles.ctaPrimary} onPress={() => router.push('/circle-detail')}>
+            <Pressable
+              style={styles.ctaPrimary}
+              onPress={() => {
+                joinCircle('frishman'); // one-tap join, straight from the notification
+                router.push('/chat');
+              }}
+            >
               <Txt style={styles.ctaPrimaryText}>אני בפנים</Txt>
             </Pressable>
             <Pressable style={styles.ctaSecondary} onPress={() => router.push('/map')}>
@@ -90,7 +101,7 @@ export default function Notifications() {
             <Txt style={styles.rowTitle}>דניאל הצטרף למעגל שלך</Txt>
             <Txt style={styles.rowMeta}>אלטינה · חוף גורדון · לפני 18 דק'</Txt>
           </View>
-          <View style={styles.unreadDot} />
+          {unread('n2') && <View style={styles.unreadDot} />}
         </View>
 
         <SectionLabel style={{ marginTop: 6 }}>היום</SectionLabel>
@@ -140,7 +151,6 @@ export default function Notifications() {
         </View>
       </ScrollView>
 
-      <TabBar active="notifications" />
     </View>
   );
 }

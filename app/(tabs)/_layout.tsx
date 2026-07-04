@@ -1,25 +1,21 @@
 import { View, Pressable, StyleSheet } from 'react-native';
+import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
-import { Txt } from './Txt';
-import { Icon } from './icons';
-import { colors, fonts, shadows } from '../theme';
+import { Txt, Icon } from '../../src/components';
+import { colors, fonts, shadows } from '../../src/theme';
+import { useStore } from '../../src/store';
 
-import { useStore } from '../store';
+const TAB_META: Record<string, { label: string; icon: 'map' | 'users' | 'bell' | 'settings' }> = {
+  map: { label: 'מפה', icon: 'map' },
+  'my-circles': { label: 'המעגלים שלי', icon: 'users' },
+  notifications: { label: 'התראות', icon: 'bell' },
+  profile: { label: 'פרופיל', icon: 'settings' },
+};
 
-export type TabKey = 'map' | 'circles' | 'notifications' | 'profile';
-
-const TABS: { key: TabKey; label: string; route: string; showBadge?: boolean }[] = [
-  { key: 'map', label: 'מפה', route: '/map' },
-  { key: 'circles', label: 'המעגלים שלי', route: '/my-circles' },
-  { key: 'notifications', label: 'התראות', route: '/notifications', showBadge: true },
-  { key: 'profile', label: 'פרופיל', route: '/profile' },
-];
-
-function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
+function TabIcon({ icon, active }: { icon: string; active: boolean }) {
   const color = active ? colors.sunset : colors.faint;
-  if (tab === 'map') {
+  if (icon === 'map') {
     // sand-ring circle motif
     return (
       <Svg width={24} height={24} viewBox="0 0 24 24" style={{ transform: [{ rotate: '-30deg' }] }}>
@@ -36,28 +32,49 @@ function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
       </Svg>
     );
   }
-  const name = tab === 'circles' ? 'users' : tab === 'notifications' ? 'bell' : 'settings';
-  return <Icon name={name} size={23} color={color} strokeWidth={active ? 2.3 : 2} />;
+  return <Icon name={icon as any} size={23} color={color} strokeWidth={active ? 2.3 : 2} />;
 }
 
-export function TabBar({ active }: { active: TabKey }) {
+// Minimal structural type — expo-router vendors its own bottom-tabs types,
+// so depending on @react-navigation/bottom-tabs directly causes conflicts.
+type PillTabBarProps = {
+  state: { index: number; routes: { key: string; name: string }[] };
+  navigation: {
+    emit: (e: any) => any;
+    navigate: (name: string) => void;
+  };
+};
+
+// The iOS floating pill bar (design 1c) as a real navigation tab bar —
+// screens keep their state across tab switches.
+function PillTabBar({ state, navigation }: PillTabBarProps) {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const unread = useStore((s) => s.notifications.filter((n) => n.unread).length);
+
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
       <View style={styles.pill}>
-        {TABS.map((t) => {
-          const isActive = t.key === active;
-          const badge = t.showBadge ? unread : 0;
+        {state.routes.map((route, index) => {
+          const meta = TAB_META[route.name];
+          if (!meta) return null;
+          const isActive = state.index === index;
+          const badge = route.name === 'notifications' ? unread : 0;
           return (
             <Pressable
-              key={t.key}
+              key={route.key}
               style={styles.tab}
-              onPress={() => !isActive && router.replace(t.route as any)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={meta.label}
+              onPress={() => {
+                const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                if (!isActive && !event.defaultPrevented) {
+                  navigation.navigate(route.name);
+                }
+              }}
             >
               <View>
-                <TabIcon tab={t.key} active={isActive} />
+                <TabIcon icon={meta.icon} active={isActive} />
                 {badge > 0 ? (
                   <View style={styles.badge}>
                     <Txt style={{ color: '#fff', fontSize: 9.5, fontFamily: fonts.extrabold }}>{badge}</Txt>
@@ -72,13 +89,27 @@ export function TabBar({ active }: { active: TabKey }) {
                   marginTop: 3,
                 }}
               >
-                {t.label}
+                {meta.label}
               </Txt>
             </Pressable>
           );
         })}
       </View>
     </View>
+  );
+}
+
+export default function TabsLayout() {
+  return (
+    <Tabs
+      tabBar={(props) => <PillTabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.sandBg } }}
+    >
+      <Tabs.Screen name="map" />
+      <Tabs.Screen name="my-circles" />
+      <Tabs.Screen name="notifications" />
+      <Tabs.Screen name="profile" />
+    </Tabs>
   );
 }
 

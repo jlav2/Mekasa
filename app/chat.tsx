@@ -1,9 +1,14 @@
-import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { useRef, useState } from 'react';
+import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt, Icon } from '../src/components';
 import { colors, fonts } from '../src/theme';
+import { useStore } from '../src/store';
+import type { ChatMessage } from '../src/data/models';
+
+const CIRCLE_ID = 'frishman';
 
 type Msg = {
   id: string;
@@ -16,45 +21,20 @@ type Msg = {
   time?: string;
 };
 
-const MESSAGES: Msg[] = [
-  { id: 'm0', kind: 'join', text: 'נועה הצטרפה למעגל · 17:42' },
-  {
-    id: 'm1',
-    kind: 'in',
-    name: 'עומר · מארח',
-    nameColor: colors.sunset,
-    avatarLetter: 'ע',
-    avatarColor: colors.petrol,
-    text: 'חבר\'ה אנחנו במגרש 2, ליד סוכת המציל. הרשת כבר למעלה 💪',
-    time: '17:44',
-  },
-  {
-    id: 'm2',
-    kind: 'in',
-    name: 'נועה',
-    nameColor: colors.amber,
-    avatarLetter: 'נ',
-    avatarColor: colors.amber,
-    text: 'מביאה כדור נוסף ליתר ביטחון',
-    time: '17:46',
-  },
-  { id: 'm3', kind: 'out', text: 'יוצא עכשיו, 5 דקות ואני שם', time: '17:47' },
-  { id: 'm4', kind: 'milestone', text: 'המעגל התמלא — 4/4. משחקים!' },
-  {
-    id: 'm5',
-    kind: 'in',
-    name: 'דניאל',
-    nameColor: colors.live,
-    avatarLetter: 'ד',
-    avatarColor: colors.live,
-    text: 'מישהו מביא רמקול? 🎵',
-    time: '17:49',
-  },
-];
+const toMsg = (m: ChatMessage): Msg => ({
+  id: m.id,
+  kind: m.kind,
+  name: m.senderName,
+  nameColor: m.senderColor,
+  avatarLetter: m.avatarLetter,
+  avatarColor: m.avatarColor,
+  text: m.text,
+  time: m.kind === 'in' || m.kind === 'out' ? m.time : undefined,
+});
 
 const QUICK_REPLIES = ['בדרך 🏃', 'מביא כדור', "עוד 10 דק'"];
 
-function RingAvatar() {
+function RingAvatar({ count }: { count: string }) {
   return (
     <View style={{ width: 46, height: 46 }}>
       <Svg width={46} height={46} viewBox="0 0 64 64" style={StyleSheet.absoluteFill}>
@@ -70,7 +50,7 @@ function RingAvatar() {
         />
       </Svg>
       <View style={styles.ringAvatarInner}>
-        <Txt style={{ fontFamily: fonts.extrabold, fontSize: 12, color: '#fff' }}>3/4</Txt>
+        <Txt style={{ fontFamily: fonts.extrabold, fontSize: 12, color: '#fff' }}>{count}</Txt>
       </View>
     </View>
   );
@@ -130,6 +110,17 @@ function OutgoingBubble({ m }: { m: Msg }) {
 export default function Chat() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  const [draft, setDraft] = useState('');
+
+  const circle = useStore((s) => s.circleById(CIRCLE_ID))!;
+  const messages = useStore((s) => s.messages).filter((m) => m.circleId === CIRCLE_ID).map(toMsg);
+  const sendMessage = useStore((s) => s.sendMessage);
+
+  const send = (text: string) => {
+    sendMessage(CIRCLE_ID, text);
+    setDraft('');
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
@@ -151,14 +142,14 @@ export default function Chat() {
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Icon name="chevronRight" size={20} color="#fff" strokeWidth={2.4} />
           </Pressable>
-          <RingAvatar />
+          <RingAvatar count={`${circle.players.length}/${circle.capacity}`} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Txt style={styles.headerTitle} numberOfLines={1}>
               המעגל של עומר · חוף פרישמן
             </Txt>
             <View style={styles.headerSubRow}>
               <View style={styles.liveDot} />
-              <Txt style={styles.headerSub}>משחק חי · 3 שחקנים בצ'אט</Txt>
+              <Txt style={styles.headerSub}>משחק חי · {circle.players.length} שחקנים בצ'אט</Txt>
             </View>
           </View>
           <View style={styles.pinBtn}>
@@ -169,11 +160,13 @@ export default function Chat() {
 
       {/* messages */}
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
+        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
-        {MESSAGES.map((m) => {
+        {messages.map((m) => {
           if (m.kind === 'join') return <JoinBubble key={m.id} text={m.text} />;
           if (m.kind === 'milestone') return <MilestoneBubble key={m.id} text={m.text} />;
           if (m.kind === 'out') return <OutgoingBubble key={m.id} m={m} />;
@@ -184,7 +177,7 @@ export default function Chat() {
       {/* quick replies */}
       <View style={styles.quickRow}>
         {QUICK_REPLIES.map((q) => (
-          <Pressable key={q} style={styles.quickChip}>
+          <Pressable key={q} style={styles.quickChip} onPress={() => send(q)}>
             <Txt style={styles.quickChipText}>{q}</Txt>
           </Pressable>
         ))}
@@ -193,13 +186,21 @@ export default function Chat() {
       {/* input */}
       <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 20) + 24 }]}>
         <View style={styles.inputPill}>
-          <Txt style={styles.inputPlaceholder}>כתוב למעגל…</Txt>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder="כתוב למעגל…"
+            placeholderTextColor={colors.faint}
+            style={styles.input}
+            onSubmitEditing={() => send(draft)}
+            returnKeyType="send"
+          />
           <Svg width={18} height={18} viewBox="0 0 20 20">
             <Circle cx="10" cy="10" r="8" fill="none" stroke={colors.faint} strokeWidth={1.7} />
             <Path d="M6.5 11.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8M7 8h.01M13 8h.01" fill="none" stroke={colors.faint} strokeWidth={1.7} strokeLinecap="round" />
           </Svg>
         </View>
-        <Pressable style={styles.sendFab}>
+        <Pressable style={styles.sendFab} onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel="שלח">
           <Icon name="send" size={18} color="#fff" strokeWidth={2.4} />
         </Pressable>
       </View>
@@ -349,6 +350,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   inputPlaceholder: { flex: 1, fontFamily: fonts.body, fontSize: 14.5, color: colors.faint },
+  input: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 14.5,
+    color: colors.ink,
+    textAlign: 'right',
+    paddingVertical: 0,
+  },
   sendFab: {
     width: 46,
     height: 46,

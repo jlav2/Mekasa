@@ -15,13 +15,15 @@ import {
   AvatarStack,
   SandRing,
   Icon,
-  TabBar,
-} from '../src/components';
-import { colors, fonts, shadows } from '../src/theme';
+  } from '../../src/components';
+import { colors, fonts, shadows } from '../../src/theme';
+import { useStore } from '../../src/store';
 
 export default function MyCircles() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
+  const own = useStore((s) => s.circleById('own-gordon'))!;
+  const ownMissing = own.capacity - own.players.length;
   const onTab = (i: number) => {
     if (i === 1) router.replace('/recurring');
     else if (i === 2) router.replace('/history');
@@ -86,14 +88,18 @@ export default function MyCircles() {
             onPress={() => router.push('/tournament')}
           />
 
-          {/* own scheduled */}
+          {/* own scheduled (live from store) */}
           <UpcomingRow
             ringColor={colors.live}
             ringRotate={80}
-            center={<Txt style={{ fontSize: 11, fontFamily: fonts.extrabold, color: '#fff' }}>2/6</Txt>}
+            center={
+              <Txt style={{ fontSize: 11, fontFamily: fonts.extrabold, color: '#fff' }}>
+                {own.players.length}/{own.capacity}
+              </Txt>
+            }
             centerBg={colors.live}
-            title="אלטינה · חוף גורדון"
-            meta="ראשון 18:00 · פתחת את המעגל · חסרים 4"
+            title={`${own.sportLabel} · ${own.beachName}`}
+            meta={`${own.startLabel} · פתחת את המעגל · חסרים ${ownMissing}`}
             badge={<Badge label="שלך" bg="rgba(255,107,44,.12)" color={colors.sunsetDeep} />}
             onPress={() => router.push('/circle-detail')}
           />
@@ -118,7 +124,6 @@ export default function MyCircles() {
           </View>
         </View>
       </Screen>
-      <TabBar active="circles" />
     </View>
   );
 }

@@ -2,16 +2,16 @@ import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   LiveMap,
-  TabBar,
-  Card,
+    Card,
   Txt,
   Button,
   Chip,
   StatusDot,
   AvatarStack,
   Icon,
-} from '../src/components';
-import { colors, fonts, shadows } from '../src/theme';
+} from '../../src/components';
+import { colors, fonts, shadows } from '../../src/theme';
+import { useStore } from '../../src/store';
 
 function Dot({ color }: { color: string }) {
   return <View style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: color }} />;
@@ -19,6 +19,15 @@ function Dot({ color }: { color: string }) {
 
 export default function Map() {
   const router = useRouter();
+  const nearest = useStore((s) => s.circles.find((c) => c.id === 'frishman'))!;
+  const joined = useStore((s) => s.isJoined('frishman'));
+  const joinCircle = useStore((s) => s.joinCircle);
+  const missing = nearest.capacity - nearest.players.length;
+
+  const onJoin = () => {
+    if (!joined) joinCircle(nearest.id);
+    router.push('/chat');
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
@@ -66,35 +75,40 @@ export default function Map() {
         </View>
       </LiveMap>
 
-      {/* bottom floating card — nearest circle */}
+      {/* bottom floating card — nearest circle (live from store) */}
       <Card floating radius={24} pad={16} style={styles.card}>
         <View style={styles.statusRow}>
-          <StatusDot color={colors.sunset} size={9} />
-          <Txt style={styles.statusTxt}>חסר שחקן · 300 מ&apos; ממך</Txt>
+          <StatusDot color={joined ? colors.live : colors.sunset} size={9} />
+          <Txt style={[styles.statusTxt, joined && { color: colors.liveDeep }]}>
+            {joined ? 'אתה בפנים — משחק חי' : `חסר שחקן · ${nearest.distanceLabel}`}
+          </Txt>
           <Txt style={styles.nowTxt}>עכשיו</Txt>
         </View>
         <View style={styles.mainRow}>
           <View style={{ flex: 1 }}>
-            <Txt style={styles.title}>פוצ&apos;יוולי · חוף פרישמן</Txt>
-            <Txt style={styles.meta}>רמה בינונית · מגרש 2, ליד המציל</Txt>
+            <Txt style={styles.title}>
+              {nearest.sportLabel} · {nearest.beachName}
+            </Txt>
+            <Txt style={styles.meta}>רמה בינונית · {nearest.court}</Txt>
           </View>
           <AvatarStack
-            people={[
-              { letter: 'ע', colorIndex: 0 },
-              { letter: 'ד', colorIndex: 1 },
-              { letter: 'נ', colorIndex: 2 },
-            ]}
+            people={nearest.players.map((p) => ({ letter: p.avatarInitial, color: p.avatarColor }))}
             size={38}
             border={colors.card}
-            emptySlot
+            emptySlot={missing > 0}
             emptyLabel="+"
             emptyBorder={colors.sunset}
           />
         </View>
-        <Button label="אני בפנים" size="lg" style={{ marginTop: 14 }} onPress={() => router.push('/circle-detail')} />
+        <Button
+          label={joined ? 'פתח צ׳אט המעגל' : 'אני בפנים'}
+          variant={joined ? 'live' : 'primary'}
+          size="lg"
+          style={{ marginTop: 14 }}
+          onPress={onJoin}
+        />
       </Card>
 
-      <TabBar active="map" />
     </View>
   );
 }

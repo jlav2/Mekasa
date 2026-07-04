@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LiveMap, Card, Txt, AvatarStack, StatusDot, Icon } from '../src/components';
 import { colors, fonts, radii } from '../src/theme';
+import { useStore } from '../src/store';
 
 type ChipDef = { label: string; selected?: boolean };
 const CHIPS: ChipDef[] = [
@@ -50,6 +51,7 @@ function NavItem({
 export default function MapAndroid() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const unread = useStore((s) => s.notifications.filter((n) => n.unread).length);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandMap }}>
@@ -107,7 +109,7 @@ export default function MapAndroid() {
           label="מפה"
         />
         <NavItem icon={<Icon name="users" size={20} color="#49454F" strokeWidth={2} />} label="המעגלים שלי" />
-        <NavItem icon={<Icon name="bell" size={20} color="#49454F" strokeWidth={2} />} label="התראות" badge={3} />
+        <NavItem icon={<Icon name="bell" size={20} color="#49454F" strokeWidth={2} />} label="התראות" badge={unread} />
         <NavItem icon={<Icon name="settings" size={20} color="#49454F" strokeWidth={1.8} />} label="פרופיל" />
       </View>
     </View>
