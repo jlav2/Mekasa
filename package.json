@@ -1,15 +1,31 @@
 {
   "name": "mekasaapp",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/heebo": "^0.4.2",
+    "@expo-google-fonts/karantina": "^0.4.1",
+    "@expo/metro-runtime": "~57.0.3",
     "expo": "~57.0.2",
+    "expo-font": "~57.0.0",
+    "expo-linear-gradient": "~57.0.0",
+    "expo-router": "~57.0.3",
+    "expo-splash-screen": "~57.0.2",
     "expo-status-bar": "~57.0.0",
+    "maplibre-gl": "^5.24.0",
     "react": "19.2.3",
-    "react-native": "0.86.0"
+    "react-dom": "19.2.3",
+    "react-native": "0.86.0",
+    "react-native-gesture-handler": "~2.32.0",
+    "react-native-maps": "1.27.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "@types/react-dom": "^19.2.3",
     "typescript": "~6.0.3"
   },
   "scripts": {
