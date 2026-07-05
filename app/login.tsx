@@ -8,7 +8,7 @@ import { Txt, Button, AppleGlyph, GoogleGlyph } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 
-function SsoButton({ children, bg, color, border, onPress }: any) {
+function SsoButton({ children, bg, border, onPress }: any) {
   return (
     <Pressable
       onPress={onPress}

@@ -105,8 +105,10 @@ export function LiveMap({
     if (typeof __DEV__ !== 'undefined' && __DEV__) (window as any).__mekasaMap = map;
     // 'style.load' fires as soon as the style JSON is parsed (the 'load' event
     // can be held up indefinitely by pending resources); 'idle' is the safety net.
+    // once-only: the base style is set at mount and never swapped, so the palette
+    // only needs applying a single time (whichever of these fires first).
     const restyle = () => applyPalette(map);
-    map.on('style.load', restyle);
+    map.once('style.load', restyle);
     map.once('idle', restyle);
     if (map.isStyleLoaded()) restyle();
 

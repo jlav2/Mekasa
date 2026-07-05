@@ -418,8 +418,9 @@ export const useStore = create<AppState>((set, get) => ({
       startLabel: input.startLabel,
       distanceLabel: distanceLabelFrom(draftBeach.lat, draftBeach.lng),
       // nudge off the beach anchor so markers don't stack on existing circles
-      lat: draftBeach.lat + ((Date.now() % 7) - 3) * 0.0004,
-      lng: draftBeach.lng + ((Date.now() % 5) - 2) * 0.0003,
+      // (random, not Date.now()-derived — same-tick creates would collide)
+      lat: draftBeach.lat + (Math.random() - 0.5) * 0.0016,
+      lng: draftBeach.lng + (Math.random() - 0.5) * 0.0012,
     };
     const time = nowTime();
     const opening: ChatMessage = {
@@ -477,7 +478,9 @@ export const useStore = create<AppState>((set, get) => ({
     ];
     if (nowFull) {
       events.push({
-        id: `evt-full-${circleId}`,
+        // include the joiner id so a refill after someone leaves isn't
+        // clobbered by the previous fill's message on realtime upsert
+        id: `evt-full-${circleId}-${user.id}`,
         circleId,
         kind: 'milestone',
         text: `המעגל התמלא — ${players.length}/${circle.capacity}. משחקים!`,

@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import {
   View,
   Pressable,
@@ -345,6 +345,7 @@ export function ProgressDashes({ total, active }: { total: number; active: numbe
 /* ---------------- Toggle (iOS switch) ---------------- */
 export function Toggle({ value, onChange, onColor = colors.live }: { value: boolean; onChange?: (v: boolean) => void; onColor?: string }) {
   const [on, setOn] = useState(value);
+  useEffect(() => setOn(value), [value]); // stay in sync when used as a controlled prop
   return (
     <Pressable onPress={() => { setOn(!on); onChange?.(!on); }}>
       <Animated.View
@@ -379,6 +380,7 @@ export function Toggle({ value, onChange, onColor = colors.live }: { value: bool
 /* ---------------- Stepper ---------------- */
 export function Stepper({ value, onChange, min = 0, max = 9 }: { value: number; onChange?: (v: number) => void; min?: number; max?: number }) {
   const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]); // stay in sync when used as a controlled prop
   const set = (n: number) => { const c = Math.max(min, Math.min(max, n)); setV(c); onChange?.(c); };
   return (
     <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 14 }}>
