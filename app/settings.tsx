@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Txt, Toggle, Icon } from '../src/components';
@@ -39,13 +39,50 @@ function NavRow({ label, danger, last, onPress }: { label: string; danger?: bool
   );
 }
 
+// RN's Alert.alert is a no-op on web, so branch to window.confirm there.
+function confirmDestructive(title: string, message: string, confirmLabel: string): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    return Promise.resolve(
+      typeof window !== 'undefined' ? window.confirm(`${title}\n\n${message}`) : false,
+    );
+  }
+  return new Promise((resolve) => {
+    Alert.alert(title, message, [
+      { text: 'ביטול', style: 'cancel', onPress: () => resolve(false) },
+      { text: confirmLabel, style: 'destructive', onPress: () => resolve(true) },
+    ]);
+  });
+}
+
 export default function Settings() {
   const router = useRouter();
   const logOut = useStore((s) => s.logOut);
+  const deleteAccount = useStore((s) => s.deleteAccount);
+  const [deleting, setDeleting] = useState(false);
 
   const onLogout = async () => {
     await logOut();
     router.replace('/login');
+  };
+
+  const onDeleteAccount = async () => {
+    if (deleting) return;
+    const ok = await confirmDestructive(
+      'מחיקת חשבון',
+      'הפעולה תמחק לצמיתות את החשבון, המעגלים שיצרת וההשתתפויות שלך. אי אפשר לבטל.',
+      'מחק לצמיתות',
+    );
+    if (!ok) return;
+    setDeleting(true);
+    const res = await deleteAccount();
+    setDeleting(false);
+    if (res.ok) {
+      router.replace('/login');
+    } else if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') window.alert(res.error ?? 'מחיקת החשבון נכשלה');
+    } else {
+      Alert.alert('שגיאה', res.error ?? 'מחיקת החשבון נכשלה');
+    }
   };
 
   return (
@@ -82,7 +119,8 @@ export default function Settings() {
           <ToggleRow title="מיקום מדויק" sub="כבוי = אחרים רואים רק את החוף, לא אותך" value={false} />
           <NavRow label="הרמה שלי — עדכן ענפים ורמות" />
           <NavRow label="נהל מנוי Pro" onPress={() => router.push('/paywall')} />
-          <NavRow label="התנתק" danger last onPress={onLogout} />
+          <NavRow label="התנתק" danger onPress={onLogout} />
+          <NavRow label={deleting ? 'מוחק…' : 'מחק חשבון'} danger last onPress={onDeleteAccount} />
         </View>
 
         <Txt style={styles.sectionLabel}>פיתוח</Txt>

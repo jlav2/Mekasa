@@ -60,6 +60,7 @@ type NotificationRow = {
   body: string;
   time_label: string;
   unread: boolean;
+  circle_id: string | null;
 };
 
 const toPlayer = (r: PlayerRow): Player => ({
@@ -112,6 +113,7 @@ const toNotification = (r: NotificationRow): AppNotification => ({
   body: r.body,
   time: r.time_label,
   unread: r.unread,
+  circleId: r.circle_id ?? undefined,
 });
 
 const warn = (op: string) => (e: unknown) => console.warn(`[backend] ${op} failed:`, e);
@@ -124,6 +126,28 @@ export async function sessionInfo(): Promise<{ id: string; isAnonymous: boolean 
   const u = data.session?.user;
   if (!u) return null;
   return { id: u.id, isAnonymous: !!u.is_anonymous };
+}
+
+// Identity carried on the auth session itself (local read, no network round-trip):
+// email-signup stores { name, username } in user_metadata; OAuth providers fill
+// name/full_name/avatar. Lets a brand-new account seed its profile from real data
+// instead of the demo fixture.
+export async function authMetadata(): Promise<{
+  name?: string;
+  username?: string;
+  email?: string;
+} | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  const u = data.session?.user;
+  if (!u) return null;
+  const m = (u.user_metadata ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  return {
+    name: str(m.name) ?? str(m.full_name) ?? str(m.user_name),
+    username: str(m.username) ?? str(m.user_name),
+    email: u.email ?? undefined,
+  };
 }
 
 // Guest access — anonymous session so RLS-scoped browsing works without an account.
@@ -181,9 +205,12 @@ export async function signInPassword(identifier: string, password: string): Prom
   if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
   let email = identifier.trim();
   if (!email.includes('@')) {
-    const { data, error } = await supabase.rpc('email_for_username', { u: email });
+    // Password-gated resolver: returns the email only when the password matches,
+    // so a wrong password / unknown username both yield null (no email leak, no
+    // "does this account exist" oracle).
+    const { data, error } = await supabase.rpc('email_for_username', { u: email, p: password });
     if (error) return { ok: false, error: error.message };
-    if (!data) return { ok: false, error: 'שם משתמש לא נמצא' };
+    if (!data) return { ok: false, error: 'שם משתמש או סיסמה שגויים' };
     email = data as string;
   }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -194,6 +221,17 @@ export async function signInPassword(identifier: string, password: string): Prom
 export async function signOut(): Promise<void> {
   if (!supabase) return;
   await supabase.auth.signOut().catch(warn('signOut'));
+}
+
+// Permanently delete the signed-in account: a security-definer RPC removes the
+// caller's data (hosted circles cascade to their players + messages) and the
+// auth user itself, then we drop the now-invalid local session.
+export async function deleteAccount(): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  const { error } = await supabase.rpc('delete_account');
+  if (error) return { ok: false, error: error.message };
+  await supabase.auth.signOut().catch(warn('deleteAccount/signOut'));
+  return { ok: true };
 }
 
 // Send a password-recovery email (6-digit code when the recovery template uses
@@ -323,6 +361,7 @@ export function subscribeRealtime(handlers: {
   onCircleInsert: (circle: Circle) => void;
   onCircleUpdate: (circle: Partial<Circle> & { id: string }) => void;
   onMessageInsert: (message: ChatMessage) => void;
+  onNotificationInsert: (notification: AppNotification) => void;
   onNotificationUpdate: (id: string, unread: boolean) => void;
 }): () => void {
   const sb = supabase;
@@ -344,6 +383,9 @@ export function subscribeRealtime(handlers: {
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (p) => {
       handlers.onMessageInsert(toMessage(p.new as MessageRow));
     })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (p) => {
+      handlers.onNotificationInsert(toNotification(p.new as NotificationRow));
+    })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, (p) => {
       const r = p.new as NotificationRow;
       handlers.onNotificationUpdate(r.id, r.unread);
@@ -356,72 +398,76 @@ export function subscribeRealtime(handlers: {
 
 // ---- write-through pushes (optimistic UI already applied locally) ----
 
-export function pushJoin(circle: Circle, player: Player, events: ChatMessage[]) {
+// Resolves false when the DB rejects the join (e.g. the capacity-guard trigger
+// lost a race to another joiner) so the caller can roll back its optimistic state.
+export async function pushJoin(circle: Circle, player: Player, events: ChatMessage[]): Promise<boolean> {
   const sb = supabase;
-  if (!sb) return;
+  if (!sb) return true; // offline demo — nothing to reject
   // The full-circle state flip happens in a DB trigger (the joiner isn't the
   // host, so RLS forbids updating the circle row from here).
-  sb
-    .from('players')
-    .insert({
-      id: `${circle.id}:${player.id}`,
-      circle_id: circle.id,
-      user_id: player.id,
-      name: player.name,
-      avatar_initial: player.avatarInitial,
-      avatar_color: player.avatarColor,
-      position: circle.players.length,
-    })
-    .then(({ error }) => {
-      if (error) return warn('pushJoin/player')(error);
-      pushMessages(events);
-    });
+  const { error } = await sb.from('players').insert({
+    id: `${circle.id}:${player.id}`,
+    circle_id: circle.id,
+    user_id: player.id,
+    name: player.name,
+    avatar_initial: player.avatarInitial,
+    avatar_color: player.avatarColor,
+    position: circle.players.length,
+  });
+  if (error) {
+    warn('pushJoin/player')(error);
+    return false;
+  }
+  pushMessages(events);
+  return true;
 }
 
-export function pushCreateCircle(circle: Circle, host: Player, events: ChatMessage[]) {
+// Resolves false when persisting fails so the caller can drop the optimistic circle.
+export async function pushCreateCircle(circle: Circle, host: Player, events: ChatMessage[]): Promise<boolean> {
   const sb = supabase;
-  if (!sb) return;
+  if (!sb) return true; // offline demo — nothing to reject
   // Order matters under RLS: circle (host_id = uid) → host player row →
   // opening message (requires membership).
-  sb
-    .from('circles')
-    .insert({
-      id: circle.id,
-      sport: circle.sport,
-      sport_label: circle.sportLabel,
-      beach_id: circle.beachId,
-      beach_name: circle.beachName,
-      court: circle.court,
-      level_label: circle.levelLabel,
-      capacity: circle.capacity,
-      state: circle.state,
-      is_open: circle.isOpen,
-      host_id: circle.hostId,
-      host_name: circle.hostName,
-      start_label: circle.startLabel,
-      distance_label: circle.distanceLabel,
-      host_note: circle.hostNote ?? null,
-      lat: circle.lat,
-      lng: circle.lng,
-    })
-    .then(({ error }) => {
-      if (error) return warn('pushCreateCircle/circle')(error);
-      sb
-        .from('players')
-        .insert({
-          id: `${circle.id}:${host.id}`,
-          circle_id: circle.id,
-          user_id: host.id,
-          name: host.name,
-          avatar_initial: host.avatarInitial,
-          avatar_color: host.avatarColor,
-          position: 0,
-        })
-        .then(({ error: e }) => {
-          if (e) return warn('pushCreateCircle/host')(e);
-          pushMessages(events);
-        });
-    });
+  const { error } = await sb.from('circles').insert({
+    id: circle.id,
+    sport: circle.sport,
+    sport_label: circle.sportLabel,
+    beach_id: circle.beachId,
+    beach_name: circle.beachName,
+    court: circle.court,
+    level_label: circle.levelLabel,
+    capacity: circle.capacity,
+    state: circle.state,
+    is_open: circle.isOpen,
+    host_id: circle.hostId,
+    host_name: circle.hostName,
+    start_label: circle.startLabel,
+    distance_label: circle.distanceLabel,
+    host_note: circle.hostNote ?? null,
+    lat: circle.lat,
+    lng: circle.lng,
+  });
+  if (error) {
+    warn('pushCreateCircle/circle')(error);
+    return false;
+  }
+  const { error: hostErr } = await sb.from('players').insert({
+    id: `${circle.id}:${host.id}`,
+    circle_id: circle.id,
+    user_id: host.id,
+    name: host.name,
+    avatar_initial: host.avatarInitial,
+    avatar_color: host.avatarColor,
+    position: 0,
+  });
+  if (hostErr) {
+    warn('pushCreateCircle/host')(hostErr);
+    // Don't leave a hostless circle behind (players/messages cascade).
+    await sb.from('circles').delete().eq('id', circle.id);
+    return false;
+  }
+  pushMessages(events);
+  return true;
 }
 
 export function pushMessages(messages: ChatMessage[]) {

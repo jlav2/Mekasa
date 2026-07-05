@@ -27,7 +27,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }}>
+    <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }} keyboardAvoiding>
       <View style={styles.hero}>
         <DecorRing style={{ left: -70, top: -40 }} />
         <Pressable style={styles.back} onPress={() => router.back()}>

@@ -9,6 +9,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt, Icon, SectionLabel, DecorRing, RingBadge } from '../../src/components';
 import { colors, fonts } from '../../src/theme';
 import { useStore } from '../../src/store';
+import type { AppNotification } from '../../src/data/models';
 
 // Swipe-to-mark-read wrapper (RTL row: action panel revealed on the left edge).
 function SwipeToRead({ enabled, onRead, children }: { enabled: boolean; onRead: () => void; children: ReactNode }) {
@@ -40,14 +41,148 @@ function SwipeToRead({ enabled, onRead, children }: { enabled: boolean; onRead: 
   );
 }
 
+function UnreadDot({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+  return <Animated.View exiting={ZoomOut.duration(200)} style={styles.unreadDot} />;
+}
+
 export default function Notifications() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const notifications = useStore((s) => s.notifications);
+  const circleById = useStore((s) => s.circleById);
   const markAllRead = useStore((s) => s.markAllRead);
   const markRead = useStore((s) => s.markRead);
   const joinCircle = useStore((s) => s.joinCircle);
-  const unread = (id: string) => notifications.find((n) => n.id === id)?.unread;
+
+  const openCircle = (n: AppNotification) => {
+    markRead(n.id);
+    if (n.kind === 'tournament') return router.push('/tournament');
+    if (n.kind === 'upsell') return router.push('/paywall');
+    if (n.circleId) return router.push({ pathname: '/c/[id]', params: { id: n.circleId } });
+    router.push('/map');
+  };
+
+  // hot: urgent "circle needs a player" card with join / show-on-map CTAs
+  const renderHot = (n: AppNotification) => {
+    const circle = n.circleId ? circleById(n.circleId) : undefined;
+    return (
+      <View style={styles.hotCard}>
+        <View style={styles.hotLiveDot} />
+        <View style={styles.rowTop}>
+          <RingBadge size={48} color={colors.sunset} variant={1} rotate={40}>
+            {circle ? (
+              <Txt style={{ fontFamily: fonts.extrabold, fontSize: 11, color: '#fff' }}>
+                {circle.players.length}/{circle.capacity}
+              </Txt>
+            ) : (
+              <Icon name="pin" size={14} color="#fff" strokeWidth={2} />
+            )}
+          </RingBadge>
+          <View style={{ flex: 1 }}>
+            <Txt style={styles.hotTitle}>{n.title}</Txt>
+            <Txt style={styles.hotMeta}>{n.body ? `${n.body} · ${n.time}` : n.time}</Txt>
+          </View>
+          <UnreadDot visible={n.unread} />
+        </View>
+        <View style={styles.hotCtaRow}>
+          <Pressable
+            style={styles.ctaPrimary}
+            onPress={() => {
+              markRead(n.id);
+              if (n.circleId) {
+                joinCircle(n.circleId); // one-tap join, straight from the notification
+                router.push({ pathname: '/chat', params: { circle: n.circleId } });
+              } else {
+                router.push('/map');
+              }
+            }}
+          >
+            <Txt style={styles.ctaPrimaryText}>אני בפנים</Txt>
+          </Pressable>
+          <Pressable style={styles.ctaSecondary} onPress={() => router.push('/map')}>
+            <Txt style={styles.ctaSecondaryText}>הצג במפה</Txt>
+          </Pressable>
+        </View>
+      </View>
+    );
+  };
+
+  // social: someone joined / friend activity — avatar from the title's lead letter
+  const renderSocial = (n: AppNotification) => (
+    <Pressable style={styles.plainCard} onPress={() => openCircle(n)}>
+      <View style={[styles.avatarCircle, { backgroundColor: colors.live }]}>
+        <Txt style={{ fontFamily: fonts.bold, fontSize: 17, color: '#fff' }}>{n.title.trim().charAt(0)}</Txt>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Txt style={styles.rowTitle}>{n.title}</Txt>
+        <Txt style={styles.rowMeta}>{n.body ? `${n.body} · ${n.time}` : n.time}</Txt>
+      </View>
+      <UnreadDot visible={n.unread} />
+    </Pressable>
+  );
+
+  const renderTournament = (n: AppNotification) => (
+    <Pressable style={styles.plainCard} onPress={() => openCircle(n)}>
+      <RingBadge size={48} color={colors.petrol} variant={2} rotate={-70}>
+        <Svg width={14} height={14} viewBox="0 0 20 20">
+          <Path d="M5 2v16M5 3h10l-3 3.5L15 10H5" fill="none" stroke={colors.sandGlow} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+      </RingBadge>
+      <View style={{ flex: 1 }}>
+        <Txt style={styles.rowTitle}>{n.title}</Txt>
+        <Txt style={styles.rowMeta}>{n.body ? `${n.body} · ${n.time}` : n.time}</Txt>
+      </View>
+      {n.unread ? <UnreadDot visible /> : <Icon name="chevronLeft" size={14} color="#B9C4C9" strokeWidth={2} />}
+    </Pressable>
+  );
+
+  const renderSummary = (n: AppNotification) => (
+    <Pressable style={[styles.plainCard, { opacity: 0.75 }]} onPress={() => openCircle(n)}>
+      <View style={styles.summaryIconWrap}>
+        <Svg width={20} height={20} viewBox="0 0 24 24">
+          <Circle cx="12" cy="12" r="8" fill="none" stroke={colors.muted} strokeWidth={2} strokeDasharray="18 4 14 4" strokeLinecap="round" />
+          <Circle cx="12" cy="12" r="2.6" fill={colors.muted} />
+        </Svg>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Txt style={styles.rowTitle}>{n.title}</Txt>
+        <Txt style={styles.rowMeta}>{n.body ? `${n.body} · ${n.time}` : n.time}</Txt>
+      </View>
+      <UnreadDot visible={n.unread} />
+    </Pressable>
+  );
+
+  // upsell rows navigate to the paywall
+  const renderUpsell = (n: AppNotification) => (
+    <View style={styles.proCard}>
+      <DecorRing size={110} color={colors.sandGlow} opacity={0.15} strokeWidth={2.5} style={{ left: -30, top: -20 }} />
+      <View style={{ flex: 1 }}>
+        <Txt style={styles.proTitle}>{n.title}</Txt>
+        {n.body ? <Txt style={styles.proSub}>{n.body}</Txt> : null}
+      </View>
+      <Pressable style={styles.proCta} onPress={() => openCircle(n)}>
+        <Txt style={styles.proCtaText}>נסה חינם</Txt>
+      </Pressable>
+    </View>
+  );
+
+  const renderRow = (n: AppNotification) => {
+    const card =
+      n.kind === 'hot' ? renderHot(n)
+      : n.kind === 'tournament' ? renderTournament(n)
+      : n.kind === 'summary' ? renderSummary(n)
+      : n.kind === 'upsell' ? renderUpsell(n)
+      : renderSocial(n);
+    return (
+      <SwipeToRead key={n.id} enabled={n.unread} onRead={() => markRead(n.id)}>
+        {card}
+      </SwipeToRead>
+    );
+  };
+
+  const now = notifications.filter((n) => n.group === 'now');
+  const today = notifications.filter((n) => n.group === 'today');
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
@@ -65,90 +200,17 @@ export default function Notifications() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120, gap: 10 }}
         showsVerticalScrollIndicator={false}
       >
-        <SectionLabel>עכשיו</SectionLabel>
+        {notifications.length === 0 && (
+          <Txt style={styles.emptyTxt}>שקט על החול — אין התראות חדשות</Txt>
+        )}
 
-        {/* hot: circle opened */}
-        <View style={styles.hotCard}>
-          <View style={styles.hotLiveDot} />
-          <View style={styles.rowTop}>
-            <RingBadge size={48} color={colors.sunset} variant={1} rotate={40}>
-              <Txt style={{ fontFamily: fonts.extrabold, fontSize: 11, color: '#fff' }}>3/4</Txt>
-            </RingBadge>
-            <View style={{ flex: 1 }}>
-              <Txt style={styles.hotTitle}>נפתח מעגל בחוף פרישמן — חסר שחקן!</Txt>
-              <Txt style={styles.hotMeta}>פוצ'יוולי · בינוניים · 300 מ' ממך · לפני 2 דק'</Txt>
-            </View>
-          </View>
-          <View style={styles.hotCtaRow}>
-            <Pressable
-              style={styles.ctaPrimary}
-              onPress={() => {
-                joinCircle('frishman'); // one-tap join, straight from the notification
-                router.push('/chat');
-              }}
-            >
-              <Txt style={styles.ctaPrimaryText}>אני בפנים</Txt>
-            </Pressable>
-            <Pressable style={styles.ctaSecondary} onPress={() => router.push('/map')}>
-              <Txt style={styles.ctaSecondaryText}>הצג במפה</Txt>
-            </Pressable>
-          </View>
-        </View>
+        {now.length > 0 && <SectionLabel>עכשיו</SectionLabel>}
+        {now.map(renderRow)}
 
-        {/* joined your circle — tap opens the circle, swipe marks read */}
-        <SwipeToRead enabled={!!unread('n2')} onRead={() => markRead('n2')}>
-          <Pressable
-            style={styles.plainCard}
-            onPress={() => {
-              markRead('n2');
-              router.push({ pathname: '/c/[id]', params: { id: 'own-gordon' } });
-            }}
-          >
-            <View style={[styles.avatarCircle, { backgroundColor: colors.live }]}>
-              <Txt style={{ fontFamily: fonts.bold, fontSize: 17, color: '#fff' }}>ד</Txt>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Txt style={styles.rowTitle}>דניאל הצטרף למעגל שלך</Txt>
-              <Txt style={styles.rowMeta}>אלטינה · חוף גורדון · לפני 18 דק'</Txt>
-            </View>
-            {unread('n2') && <Animated.View exiting={ZoomOut.duration(200)} style={styles.unreadDot} />}
-          </Pressable>
-        </SwipeToRead>
+        {today.length > 0 && <SectionLabel style={{ marginTop: 6 }}>היום</SectionLabel>}
+        {today.map(renderRow)}
 
-        <SectionLabel style={{ marginTop: 6 }}>היום</SectionLabel>
-
-        {/* tournament reminder */}
-        <Pressable style={styles.plainCard} onPress={() => router.push('/tournament')}>
-          <RingBadge size={48} color={colors.petrol} variant={2} rotate={-70}>
-            <Svg width={14} height={14} viewBox="0 0 20 20">
-              <Path d="M5 2v16M5 3h10l-3 3.5L15 10H5" fill="none" stroke={colors.sandGlow} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          </RingBadge>
-          <View style={{ flex: 1 }}>
-            <Txt style={styles.rowTitle}>תזכורת: טורניר הילטון מחר ב־9:00</Txt>
-            <Txt style={styles.rowMeta}>אתה רשום עם דניאל · 8 קבוצות</Txt>
-          </View>
-          <Icon name="chevronLeft" size={14} color="#B9C4C9" strokeWidth={2} />
-        </Pressable>
-
-        {/* closed-game summary — taps through to the circle */}
-        <Pressable
-          style={[styles.plainCard, { opacity: 0.75 }]}
-          onPress={() => router.push({ pathname: '/c/[id]', params: { id: 'frishman' } })}
-        >
-          <View style={styles.summaryIconWrap}>
-            <Svg width={20} height={20} viewBox="0 0 24 24">
-              <Circle cx="12" cy="12" r="8" fill="none" stroke={colors.muted} strokeWidth={2} strokeDasharray="18 4 14 4" strokeLinecap="round" />
-              <Circle cx="12" cy="12" r="2.6" fill={colors.muted} />
-            </Svg>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Txt style={styles.rowTitle}>המעגל של אתמול נסגר — 2.5 שעות משחק</Txt>
-            <Txt style={styles.rowMeta}>חוף פרישמן · שיחקת עם 5 שחקנים</Txt>
-          </View>
-        </Pressable>
-
-        {/* pro upsell */}
+        {/* pro upsell (marketing footer, not a notification) */}
         <View style={styles.proCard}>
           <DecorRing size={110} color={colors.sandGlow} opacity={0.15} strokeWidth={2.5} style={{ left: -30, top: -20 }} />
           <View style={{ flex: 1 }}>
@@ -175,6 +237,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
+  emptyTxt: { fontFamily: fonts.medium, fontSize: 13.5, color: colors.faint, textAlign: 'center', marginTop: 40 },
 
   hotCard: {
     backgroundColor: colors.card,

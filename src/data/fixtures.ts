@@ -172,6 +172,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     body: "פוצ'יוולי · בינוניים · 300 מ' ממך",
     time: 'לפני 2 דק\'',
     unread: true,
+    circleId: 'frishman',
   },
   {
     id: 'n2',
@@ -181,6 +182,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     body: 'אלטינה · חוף גורדון · ראשון 18:00',
     time: 'לפני 14 דק\'',
     unread: true,
+    circleId: 'own-gordon',
   },
   {
     id: 'n3',
@@ -199,6 +201,7 @@ export const NOTIFICATIONS: AppNotification[] = [
     body: 'שיחקתם 2.5 שעות · דרג את המשחק',
     time: '8:05',
     unread: false,
+    circleId: 'gordon',
   },
 ];
 

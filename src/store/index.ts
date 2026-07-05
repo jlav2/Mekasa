@@ -7,6 +7,7 @@ import type { AppNotification, ChatMessage, Circle, Player, User } from '../data
 import { CHAT_MESSAGES, CIRCLES, CURRENT_USER, NOTIFICATIONS } from '../data/fixtures';
 import {
   sessionInfo,
+  authMetadata,
   fetchAll,
   fetchProfile,
   pushCreateCircle,
@@ -18,6 +19,7 @@ import {
   signInWithProvider as backendOAuth,
   requestPasswordReset as backendRequestReset,
   confirmPasswordReset as backendConfirmReset,
+  deleteAccount as backendDeleteAccount,
   signOut as backendSignOut,
   signUpEmail as backendSignUpEmail,
   subscribeRealtime,
@@ -28,6 +30,7 @@ import {
 } from '../data/backend';
 import { BEACH_OPTIONS, distanceLabelFrom, type BeachOption } from '../data/beaches';
 import type { Sport, SportProfile } from '../data/models';
+import { avatarPalette } from '../theme';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 export type CreateCircleInput = {
@@ -45,6 +48,11 @@ export type MapFilter = { sport: Sport | 'all'; level: string | 'all' };
 // Cycle orders for the two functional map chips
 export const SPORT_CYCLE: (Sport | 'all')[] = ['all', 'footvolley', 'altinha', 'volleyball'];
 export const LEVEL_CYCLE: (string | 'all')[] = ['all', 'מתחילים', 'בינוניים', 'מקצוענים'];
+
+// Level match for the map filter: circles open to all levels ('פתוח לכולם')
+// match every selection — otherwise picking any level hides them entirely.
+export const matchesLevel = (levelLabel: string, level: string | 'all') =>
+  level === 'all' || levelLabel === level || levelLabel === 'פתוח לכולם';
 
 type AppState = {
   user: User;
@@ -77,6 +85,7 @@ type AppState = {
   requestPasswordReset: (email: string) => Promise<AuthResult>;
   confirmPasswordReset: (email: string, token: string, newPassword: string) => Promise<AuthResult>;
   logOut: () => Promise<void>;
+  deleteAccount: () => Promise<AuthResult>;
   checkUsername: (username: string) => Promise<boolean>;
   setDraftBeach: (beach: BeachOption) => void;
   setSports: (sports: SportProfile[]) => void;
@@ -98,6 +107,35 @@ let unsubscribe: (() => void) | null = null;
 type Set = (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
 type Get = () => AppState;
 
+const deriveInitial = (name: string) => name.trim().charAt(0) || '·';
+
+// Stable per-user avatar color so a returning account keeps the same tint even
+// though we don't read avatar_color back from the profile row.
+const avatarColorFor = (uid: string) => {
+  let h = 0;
+  for (let i = 0; i < uid.length; i++) h = (h * 31 + uid.charCodeAt(i)) >>> 0;
+  return avatarPalette[h % avatarPalette.length];
+};
+
+// A brand-new account starts empty — it must NEVER inherit the demo fixture
+// (CURRENT_USER: 'גיא לוי' + Pro + fake sports/beaches/stats), which would
+// otherwise leak in via the store's seed state and get persisted to Supabase.
+function freshUser(uid: string, name: string): User {
+  return {
+    id: uid,
+    name,
+    avatarInitial: deriveInitial(name),
+    avatarColor: avatarColorFor(uid),
+    city: 'תל אביב',
+    memberSince: new Date().getFullYear(),
+    sports: [],
+    homeBeaches: [],
+    followedBeaches: [],
+    isPro: false,
+    stats: { circles: 0, beaches: 0, partners: 0, hours: 0 },
+  };
+}
+
 // Load profile + data and start realtime for a signed-in uid (real or guest).
 async function goLive(
   set: Set,
@@ -107,31 +145,39 @@ async function goLive(
   overrideName?: string,
   overrideUsername?: string,
 ) {
-  const profile = await fetchProfile(uid);
-  const base = get().user;
-  const name = overrideName ?? profile?.name ?? base.name;
-  const user: User = {
-    ...base,
-    id: uid,
-    name,
-    avatarInitial: name.trim().charAt(0) || base.avatarInitial,
-    isPro: profile?.isPro ?? base.isPro,
-    sports: profile?.sports ?? base.sports,
-    homeBeaches: profile?.homeBeaches ?? base.homeBeaches,
-  };
-  set({ user, authKind: kind });
-  if (!profile) {
+  const [profile, meta] = await Promise.all([fetchProfile(uid), authMetadata()]);
+
+  if (profile) {
+    // Returning account — hydrate identity from its saved profile.
+    const name = overrideName ?? profile.name;
+    const user: User = {
+      ...freshUser(uid, name),
+      isPro: profile.isPro,
+      sports: profile.sports ?? [],
+      homeBeaches: profile.homeBeaches ?? [],
+    };
+    set({ user, authKind: kind });
+  } else {
+    // First sign-in — seed a clean profile from real auth data only.
+    const name =
+      overrideName ??
+      meta?.name ??
+      (kind === 'guest' ? 'אורח' : meta?.email?.split('@')[0]) ??
+      'שחקן חדש';
+    const user = freshUser(uid, name);
+    set({ user, authKind: kind });
     upsertProfile({
       userId: uid,
       name: user.name,
       avatarInitial: user.avatarInitial,
       avatarColor: user.avatarColor,
-      isPro: user.isPro,
-      username: overrideUsername,
-      sports: user.sports,
-      homeBeaches: user.homeBeaches,
+      isPro: user.isPro, // false — no self-granted Pro
+      username: overrideUsername ?? meta?.username,
+      sports: user.sports, // []
+      homeBeaches: user.homeBeaches, // []
     });
   }
+
   const data = await fetchAll();
   if (data) set({ ...data, live: true });
   subscribeAll(set);
@@ -159,6 +205,12 @@ function subscribeAll(set: Set) {
     onMessageInsert: (message) =>
       set((s) =>
         s.messages.some((m) => m.id === message.id) ? s : { messages: [...s.messages, message] },
+      ),
+    onNotificationInsert: (notification) =>
+      set((s) =>
+        s.notifications.some((n) => n.id === notification.id)
+          ? s
+          : { notifications: [notification, ...s.notifications] },
       ),
     onNotificationUpdate: (id, unread) =>
       set((s) => ({
@@ -251,6 +303,23 @@ export const useStore = create<AppState>((set, get) => ({
     });
   },
 
+  deleteAccount: async () => {
+    const res = await backendDeleteAccount();
+    if (!res.ok) return res;
+    // Wipe the session locally, exactly like a logout.
+    unsubscribe?.();
+    unsubscribe = null;
+    set({
+      user: CURRENT_USER,
+      circles: CIRCLES,
+      messages: CHAT_MESSAGES,
+      notifications: NOTIFICATIONS,
+      live: false,
+      authKind: 'none',
+    });
+    return res;
+  },
+
   checkUsername: (username) => usernameAvailable(username),
 
   setDraftBeach: (beach) => set({ draftBeach: beach }),
@@ -318,7 +387,17 @@ export const useStore = create<AppState>((set, get) => ({
       time,
     };
     set((s) => ({ circles: [...s.circles, circle], messages: [...s.messages, opening] }));
-    if (get().live) pushCreateCircle(circle, host, [opening]);
+    if (get().live) {
+      pushCreateCircle(circle, host, [opening]).then((ok) => {
+        if (ok) return;
+        // Persist failed — drop the optimistic circle (its /c/[id] route falls
+        // back to the in-app not-found screen if the user already navigated).
+        set((s) => ({
+          circles: s.circles.filter((c) => c.id !== id),
+          messages: s.messages.filter((m) => m.circleId !== id),
+        }));
+      });
+    }
     return id;
   },
 
@@ -367,7 +446,22 @@ export const useStore = create<AppState>((set, get) => ({
       circles: circles.map((c) => (c.id === circleId ? updated : c)),
       messages: [...messages, ...events],
     });
-    if (get().live) pushJoin(circle, me, events);
+    if (get().live) {
+      pushJoin(circle, me, events).then((ok) => {
+        if (ok) return;
+        // DB rejected the join (capacity trigger lost a race) — undo the
+        // optimistic add so local state doesn't stay overfull/live.
+        const eventIds = new Set(events.map((e) => e.id));
+        set((s) => ({
+          circles: s.circles.map((c) =>
+            c.id === circleId
+              ? { ...c, players: c.players.filter((p) => p.id !== me.id), state: circle.state }
+              : c,
+          ),
+          messages: s.messages.filter((m) => !eventIds.has(m.id)),
+        }));
+      });
+    }
   },
 
   sendMessage: (circleId, text) => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -92,6 +92,7 @@ export default function Login() {
       style={{ flex: 1 }}
     >
       <SeaHorizon />
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={{ flex: 1, alignItems: 'center', paddingTop: insets.top + 70 }}>
         <Txt style={{ fontFamily: fonts.displayBold, fontSize: 84, lineHeight: 78, color: colors.ink }}>מקאסה</Txt>
         <Txt style={{ fontSize: 15, fontFamily: fonts.semibold, color: colors.ink, marginTop: 6 }}>
@@ -164,6 +165,7 @@ export default function Login() {
 
         <Button label="המשך כאורח" variant="secondary" size="md" onPress={guest} />
       </View>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }

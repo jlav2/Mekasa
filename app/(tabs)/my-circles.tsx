@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useMemo, useState } from 'react';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
@@ -10,20 +10,31 @@ import {
   Button,
   SegmentedControl,
   StatusDot,
-  Avatar,
   AvatarStack,
   DecorRing,
   RingBadge,
   Icon,
-  } from '../../src/components';
-import { colors, fonts, shadows } from '../../src/theme';
+} from '../../src/components';
+import { colors, fonts } from '../../src/theme';
 import { useStore } from '../../src/store';
+import type { Circle } from '../../src/data/models';
 
 export default function MyCircles() {
   const router = useRouter();
   const [tab, setTab] = useState(0);
-  const own = useStore((s) => s.circleById('own-gordon'))!;
-  const ownMissing = own.capacity - own.players.length;
+  const user = useStore((s) => s.user);
+  const circles = useStore((s) => s.circles);
+
+  const { mine, liveNow, upcoming, beachCount } = useMemo(() => {
+    const mine = circles.filter((c) => c.players.some((p) => p.id === user.id));
+    return {
+      mine,
+      liveNow: mine.filter((c) => c.state === 'live'),
+      upcoming: mine.filter((c) => c.state === 'scheduled' || c.state === 'missing' || c.state === 'full'),
+      beachCount: new Set(mine.map((c) => c.beachId)).size,
+    };
+  }, [circles, user.id]);
+
   const onTab = (i: number) => {
     if (i === 1) router.replace('/recurring');
     else if (i === 2) router.replace('/history');
@@ -44,102 +55,153 @@ export default function MyCircles() {
           style={{ marginTop: 14 }}
         />
 
-        <View style={{ gap: 10, marginTop: 16 }}>
-          {/* live now */}
-          <Card petrol floating style={{ overflow: 'hidden' }}>
-            <DecorRing size={190} style={{ left: -55, top: -40 }} />
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
-              <View style={styles.liveBadge}>
-                <StatusDot color="#fff" size={7} />
-                <Txt style={{ color: '#fff', fontSize: 11.5, fontFamily: fonts.extrabold }}>משחק חי — אתה בפנים</Txt>
-              </View>
-              <Txt style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,.6)', fontFamily: fonts.medium }}>התחיל 17:40</Txt>
-            </View>
-            <Txt style={{ fontFamily: fonts.displayBold, fontSize: 36, lineHeight: 36, color: '#fff', marginTop: 10 }}>
-              פוצ'יוולי · חוף פרישמן
-            </Txt>
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginTop: 10 }}>
-              <AvatarStack
-                size={32}
-                people={[
-                  { letter: 'ע', color: colors.sunset },
-                  { letter: 'ד', color: colors.live },
-                  { letter: 'נ', color: colors.amber },
-                  { letter: 'ג', color: colors.muted },
-                ]}
+        {mine.length === 0 ? (
+          <EmptyState onPress={() => router.push('/map')} />
+        ) : (
+          <View style={{ gap: 10, marginTop: 16 }}>
+            {liveNow.map((c) => (
+              <LiveCard
+                key={c.id}
+                circle={c}
+                onChat={() => router.push({ pathname: '/chat', params: { circle: c.id } })}
+                onOpen={() => router.push({ pathname: '/c/[id]', params: { id: c.id } })}
               />
-              <Txt style={{ fontSize: 12.5, color: 'rgba(255,255,255,.7)', fontFamily: fonts.medium }}>4/4 · מגרש 2</Txt>
-            </View>
-            <View style={{ flexDirection: 'row-reverse', gap: 8, marginTop: 14 }}>
-              <Button label="פתח צ'אט" size="sm" style={{ flex: 1, height: 42, borderRadius: 21 }} onPress={() => router.push('/chat')} />
-              <Button label="ניווט" size="sm" variant="ghost" style={{ height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.14)', paddingHorizontal: 18 }} fontSize={14} />
-            </View>
-          </Card>
+            ))}
 
-          {/* upcoming — tournament registered */}
-          <UpcomingRow
-            ringColor={colors.petrol}
-            ringRotate={-70}
-            center={<Icon name="flag" size={14} color={colors.sandGlow} />}
-            centerBg={colors.petrol}
-            title="טורניר פוצ'יוולי · חוף הילטון"
-            meta="מחר, שבת 9:00 · רשום עם דניאל · 8 קבוצות"
-            badge={<Badge label="רשום" bg={colors.chipBg} color={colors.petrol} />}
-            onPress={() => router.push('/tournament')}
-          />
+            {upcoming.map((c) => {
+              const isHost = c.hostId === user.id;
+              const missing = c.capacity - c.players.length;
+              const scheduled = c.state === 'scheduled';
+              const meta =
+                `${c.startLabel} · ${isHost ? 'פתחת את המעגל' : 'הצטרפת'}` +
+                (missing > 0 ? ` · חסרים ${missing}` : '');
+              return (
+                <UpcomingRow
+                  key={c.id}
+                  ringColor={scheduled ? colors.live : colors.sunset}
+                  ringRotate={scheduled ? 80 : -70}
+                  center={
+                    <Txt style={{ fontSize: 11, fontFamily: fonts.extrabold, color: '#fff' }}>
+                      {c.players.length}/{c.capacity}
+                    </Txt>
+                  }
+                  centerBg={scheduled ? colors.live : colors.sunset}
+                  title={`${c.sportLabel} · ${c.beachName}`}
+                  meta={meta}
+                  badge={
+                    isHost ? (
+                      <Badge label="שלך" bg="rgba(255,107,44,.12)" color={colors.sunsetDeep} />
+                    ) : (
+                      <Badge label="קרוב" bg={colors.chipBg} color={colors.petrol} />
+                    )
+                  }
+                  onPress={() => router.push({ pathname: '/c/[id]', params: { id: c.id } })}
+                />
+              );
+            })}
 
-          {/* own scheduled (live from store) */}
-          <UpcomingRow
-            ringColor={colors.live}
-            ringRotate={80}
-            center={
-              <Txt style={{ fontSize: 11, fontFamily: fonts.extrabold, color: '#fff' }}>
-                {own.players.length}/{own.capacity}
+            {/* recurring pro teaser — a forward-looking Pro feature, clearly marked */}
+            <View style={styles.recurringCard}>
+              <View style={styles.recurringIcon}>
+                <Icon name="repeat" size={22} color={colors.sunset} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Txt style={{ fontSize: 14, fontFamily: fonts.bold, color: colors.ink }}>מעגלים קבועים</Txt>
+                <Txt style={{ fontSize: 12.5, color: colors.muted, marginTop: 2, fontFamily: fonts.medium }}>
+                  קבע מעגל שחוזר כל שבוע ונפתח אוטומטית
+                </Txt>
+              </View>
+              <ProBadge size={10.5} />
+            </View>
+
+            {/* real summary line */}
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryLine} />
+              <Txt style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.faint }}>
+                אתה ב־{mine.length} מעגלים · {beachCount} חופים
               </Txt>
-            }
-            centerBg={colors.live}
-            title={`${own.sportLabel} · ${own.beachName}`}
-            meta={`${own.startLabel} · פתחת את המעגל · חסרים ${ownMissing}`}
-            badge={<Badge label="שלך" bg="rgba(255,107,44,.12)" color={colors.sunsetDeep} />}
-            onPress={() => router.push({ pathname: '/c/[id]', params: { id: own.id } })}
-          />
-
-          {/* recurring pro teaser */}
-          <View style={styles.recurringCard}>
-            <View style={styles.recurringIcon}>
-              <Icon name="repeat" size={22} color={colors.sunset} />
+              <View style={styles.summaryLine} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Txt style={{ fontSize: 14, fontFamily: fonts.bold, color: colors.ink }}>הקבוע של שלישי — 18:30 בפרישמן</Txt>
-              <Txt style={{ fontSize: 12.5, color: colors.muted, marginTop: 2, fontFamily: fonts.medium }}>מעגל קבוע שחוזר כל שבוע · נפתח אוטומטית</Txt>
-            </View>
-            <ProBadge size={10.5} />
           </View>
-
-          {/* history teaser divider */}
-          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 6, opacity: 0.7 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(14,79,94,.14)' }} />
-            <Txt style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.faint }}>שיחקת 47 מעגלים · 12 חופים</Txt>
-            <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(14,79,94,.14)' }} />
-          </View>
-        </View>
+        )}
       </Screen>
+    </View>
+  );
+}
+
+function LiveCard({ circle, onChat, onOpen }: { circle: Circle; onChat: () => void; onOpen: () => void }) {
+  const full = circle.players.length >= circle.capacity;
+  return (
+    <Card petrol floating style={{ overflow: 'hidden' }}>
+      <DecorRing size={190} style={{ left: -55, top: -40 }} />
+      <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
+        <View style={styles.liveBadge}>
+          <StatusDot color="#fff" size={7} />
+          <Txt style={{ color: '#fff', fontSize: 11.5, fontFamily: fonts.extrabold }}>משחק חי — אתה בפנים</Txt>
+        </View>
+        <Txt style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,.6)', fontFamily: fonts.medium }}>
+          {circle.startLabel}
+        </Txt>
+      </View>
+      <Txt style={{ fontFamily: fonts.displayBold, fontSize: 36, lineHeight: 36, color: '#fff', marginTop: 10 }}>
+        {circle.sportLabel} · {circle.beachName}
+      </Txt>
+      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginTop: 10 }}>
+        <AvatarStack
+          size={32}
+          people={circle.players.map((p) => ({ letter: p.avatarInitial, color: p.avatarColor }))}
+        />
+        <Txt style={{ fontSize: 12.5, color: 'rgba(255,255,255,.7)', fontFamily: fonts.medium }}>
+          {circle.players.length}/{circle.capacity}
+          {full ? ' · מלא' : ''} · {circle.court}
+        </Txt>
+      </View>
+      <View style={{ flexDirection: 'row-reverse', gap: 8, marginTop: 14 }}>
+        <Button label="פתח צ'אט" size="sm" style={{ flex: 1, height: 42, borderRadius: 21 }} onPress={onChat} />
+        <Button
+          label="פרטים"
+          size="sm"
+          variant="ghost"
+          style={{ height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.14)', paddingHorizontal: 18 }}
+          fontSize={14}
+          onPress={onOpen}
+        />
+      </View>
+    </Card>
+  );
+}
+
+function EmptyState({ onPress }: { onPress: () => void }) {
+  return (
+    <View style={styles.empty}>
+      <RingBadge size={72} color={colors.sunset} centerBg={colors.petrol} variant={3} rotate={-20}>
+        <Icon name="pin" size={22} color="#fff" strokeWidth={1.8} />
+      </RingBadge>
+      <Txt style={{ fontFamily: fonts.displayBold, fontSize: 26, color: colors.petrol, marginTop: 16 }}>
+        עדיין אין לך מעגלים
+      </Txt>
+      <Txt style={{ fontSize: 13.5, color: colors.muted, fontFamily: fonts.medium, textAlign: 'center', marginTop: 6, lineHeight: 20 }}>
+        צא למפה, מצא משחק פתוח על החול{'\n'}והצטרף בלחיצה אחת
+      </Txt>
+      <Button label="למפה" size="md" style={{ marginTop: 18, paddingHorizontal: 32 }} onPress={onPress} />
     </View>
   );
 }
 
 function UpcomingRow({ ringColor, ringRotate, center, centerBg, title, meta, badge, onPress }: any) {
   return (
-    <Card floating={false} pad={14} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12 }}>
-      <RingBadge size={48} color={ringColor} centerBg={centerBg} variant={2} rotate={ringRotate}>
-        {center}
-      </RingBadge>
-      <View style={{ flex: 1 }}>
-        <Txt style={{ fontSize: 14.5, fontFamily: fonts.bold, color: colors.ink }}>{title}</Txt>
-        <Txt style={{ fontSize: 12.5, color: colors.muted, marginTop: 2, fontFamily: fonts.medium }}>{meta}</Txt>
-      </View>
-      {badge}
-    </Card>
+    <Pressable onPress={onPress}>
+      <Card floating={false} pad={14} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12 }}>
+        <RingBadge size={48} color={ringColor} centerBg={centerBg} variant={2} rotate={ringRotate}>
+          {center}
+        </RingBadge>
+        <View style={{ flex: 1 }}>
+          <Txt style={{ fontSize: 14.5, fontFamily: fonts.bold, color: colors.ink }}>{title}</Txt>
+          <Txt style={{ fontSize: 12.5, color: colors.muted, marginTop: 2, fontFamily: fonts.medium }}>{meta}</Txt>
+        </View>
+        {badge}
+      </Card>
+    </Pressable>
   );
 }
 
@@ -157,4 +219,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,107,44,.45)',
   },
   recurringIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,107,44,.1)', alignItems: 'center', justifyContent: 'center' },
+  summaryRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 6, opacity: 0.7 },
+  summaryLine: { flex: 1, height: 1, backgroundColor: 'rgba(14,79,94,.14)' },
+  empty: { alignItems: 'center', marginTop: 60, paddingHorizontal: 24 },
 });

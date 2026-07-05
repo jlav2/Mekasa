@@ -14,7 +14,7 @@ import {
   Icon,
 } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
-import { useStore } from '../../src/store';
+import { useStore, matchesLevel } from '../../src/store';
 
 function Dot({ color }: { color: string }) {
   return <View style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: color }} />;
@@ -37,7 +37,7 @@ export default function Map() {
       circles.filter(
         (c) =>
           (filter.sport === 'all' || c.sport === filter.sport) &&
-          (filter.level === 'all' || c.levelLabel === filter.level),
+          matchesLevel(c.levelLabel, filter.level),
       ),
     [circles, filter],
   );

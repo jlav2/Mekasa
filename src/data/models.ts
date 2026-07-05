@@ -77,6 +77,7 @@ export type AppNotification = {
   body?: string;
   time: string;
   unread: boolean;
+  circleId?: string; // tap-through target (tournament/upsell navigate by kind)
 };
 
 export type Tournament = {

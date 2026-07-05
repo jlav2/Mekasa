@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import {
   View,
   ScrollView,
+  KeyboardAvoidingView,
   StyleSheet,
   ViewStyle,
   StatusBar as RNStatusBar,
@@ -18,6 +19,7 @@ export function Screen({
   bg = colors.sandBg,
   padded = true,
   edges = { top: true, bottom: true },
+  keyboardAvoiding = false,
   style,
   contentStyle,
 }: {
@@ -26,6 +28,7 @@ export function Screen({
   bg?: string;
   padded?: boolean;
   edges?: { top?: boolean; bottom?: boolean };
+  keyboardAvoiding?: boolean; // lift content above the on-screen keyboard (forms)
   style?: ViewStyle;
   contentStyle?: ViewStyle;
 }) {
@@ -35,24 +38,38 @@ export function Screen({
     paddingBottom: edges.bottom ? insets.bottom : 0,
     paddingHorizontal: padded ? 22 : 0,
   };
+  // No-op on web (RNW renders it as a plain View); real behavior on iOS/Android.
+  const kav = (node: ReactNode) =>
+    keyboardAvoiding ? (
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        {node}
+      </KeyboardAvoidingView>
+    ) : (
+      node
+    );
 
   if (scroll) {
     return (
       <View style={[{ flex: 1, backgroundColor: bg }, style]}>
-        <ScrollView
-          contentContainerStyle={[pad, contentStyle]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {children}
-        </ScrollView>
+        {kav(
+          <ScrollView
+            contentContainerStyle={[pad, contentStyle]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>,
+        )}
       </View>
     );
   }
-  return (
+  return kav(
     <View style={[{ flex: 1, backgroundColor: bg }, pad, style, contentStyle]}>
       {children}
-    </View>
+    </View>,
   );
 }
 

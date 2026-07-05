@@ -1,11 +1,13 @@
 // Native live map — react-native-maps (Apple Maps on iOS, Google on Android).
 // Google provider gets a customMapStyle matched to the sand/sea palette;
 // Apple Maps has no style API (default cartography, muted mode still applies).
-import { View, StyleSheet, Pressable } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { MapMarker } from './MapMarker';
 import { colors } from '../theme';
 import { TLV_COAST, USER_LOCATION, CIRCLE_MARKERS } from '../data/beaches';
+import type { CircleMarkerData } from '../data/beaches';
 import type { LiveMapProps } from './LiveMap.types';
 
 // Google Maps style JSON — sand/sea palette from the design tokens.
@@ -24,6 +26,44 @@ const SAND_SEA_STYLE = [
   { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#EDE0C4' }] },
   { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
 ];
+
+// A map marker re-rasterizes its custom view on every frame while
+// tracksViewChanges is true — with an animated glyph that means a permanent
+// redraw loop. Keep it true just long enough to paint, then switch it off; flip
+// back on only when the marker's visual data actually changes (e.g. realtime
+// player-count updates) so the new state rasterizes once.
+function CircleMarker({
+  m,
+  onPress,
+}: {
+  m: CircleMarkerData;
+  onPress?: (m: CircleMarkerData) => void;
+}) {
+  const [tracks, setTracks] = useState(true);
+  useEffect(() => {
+    setTracks(true);
+    const t = setTimeout(() => setTracks(false), 600);
+    return () => clearTimeout(t);
+  }, [m.state, m.count, m.label, m.size, m.variant, m.rotate]);
+
+  return (
+    <Marker
+      coordinate={{ latitude: m.lat, longitude: m.lng }}
+      anchor={{ x: 0.5, y: 0.5 }}
+      tracksViewChanges={tracks}
+      onPress={() => onPress?.(m)}
+    >
+      <MapMarker
+        state={m.state}
+        size={m.size}
+        count={m.count}
+        label={m.label}
+        variant={m.variant}
+        rotate={m.rotate}
+      />
+    </Marker>
+  );
+}
 
 export function LiveMap({
   markers = CIRCLE_MARKERS,
@@ -49,22 +89,7 @@ export function LiveMap({
         showsPointsOfInterests={false}
       >
         {markers.map((m) => (
-          <Marker
-            key={m.id}
-            coordinate={{ latitude: m.lat, longitude: m.lng }}
-            anchor={{ x: 0.5, y: 0.5 }}
-            tracksViewChanges
-            onPress={() => onMarkerPress?.(m)}
-          >
-            <MapMarker
-              state={m.state}
-              size={m.size}
-              count={m.count}
-              label={m.label}
-              variant={m.variant}
-              rotate={m.rotate}
-            />
-          </Marker>
+          <CircleMarker key={m.id} m={m} onPress={onMarkerPress} />
         ))}
         {showUser && (
           <Marker

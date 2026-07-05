@@ -50,7 +50,7 @@ export default function SignUp() {
   };
 
   return (
-    <Screen bg={colors.sandBg} contentStyle={{ paddingTop: 64, paddingBottom: 40, flexGrow: 1 }}>
+    <Screen bg={colors.sandBg} keyboardAvoiding contentStyle={{ paddingTop: 64, paddingBottom: 40, flexGrow: 1 }}>
       <View style={styles.titleRow}>
         <Txt style={styles.title}>הרשמה</Txt>
         <Pressable style={styles.closeBtn} onPress={() => router.back()}>

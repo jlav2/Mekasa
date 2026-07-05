@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, ScrollView, StyleSheet, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown, LayoutAnimationConfig } from 'react-native-reanimated';
@@ -112,7 +112,10 @@ export default function Chat() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.sandBg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       {/* header */}
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
         <DecorRing size={170} opacity={0.13} style={{ left: -50, top: -30 }} />
@@ -193,7 +196,7 @@ export default function Chat() {
           <Icon name="send" size={18} color="#fff" strokeWidth={2.4} />
         </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
