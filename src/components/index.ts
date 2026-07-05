@@ -1,6 +1,7 @@
 export * from './Txt';
 export * from './SandRing';
 export * from './Screen';
+export * from './TextField';
 export * from './Button';
 export * from './icons';
 export * from './ui';

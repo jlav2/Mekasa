@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Txt, Button, AppleGlyph, GoogleGlyph } from '../src/components';
+import { Txt, Button, AppleGlyph, GoogleGlyph, TextField } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 
@@ -105,31 +105,25 @@ export default function Login() {
           התחברות
         </Txt>
 
-        <View style={styles.inputWrap}>
-          <TextInput
-            value={identifier}
-            onChangeText={setIdentifier}
-            placeholder="אימייל או שם משתמש"
-            placeholderTextColor={colors.faint}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            style={styles.input}
-          />
-        </View>
-        <View style={styles.inputWrap}>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="סיסמה"
-            placeholderTextColor={colors.faint}
-            secureTextEntry
-            autoCapitalize="none"
-            style={styles.input}
-            onSubmitEditing={submit}
-            returnKeyType="go"
-          />
-        </View>
+        <TextField
+          pill
+          value={identifier}
+          onChangeText={setIdentifier}
+          placeholder="אימייל או שם משתמש"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+        />
+        <TextField
+          pill
+          value={password}
+          onChangeText={setPassword}
+          placeholder="סיסמה"
+          secureTextEntry
+          autoCapitalize="none"
+          onSubmitEditing={submit}
+          returnKeyType="go"
+        />
 
         <Pressable onPress={() => router.push('/forgot-password')} style={{ alignSelf: 'flex-start' }}>
           <Txt style={styles.forgot}>שכחת סיסמה?</Txt>
@@ -184,16 +178,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 30,
   },
-  inputWrap: {
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.hairlineStrong,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-  },
-  input: { fontSize: 15, color: colors.ink, fontFamily: fonts.body, textAlign: 'right', writingDirection: 'rtl' },
   error: { color: colors.danger, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center' },
   forgot: { fontSize: 12.5, color: colors.petrol, fontFamily: fonts.bold, textDecorationLine: 'underline', marginTop: -4 },
   linkRow: { flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 6 },

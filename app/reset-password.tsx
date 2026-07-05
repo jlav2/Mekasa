@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Screen, Txt, Button, Icon, DecorRing } from '../src/components';
+import { Screen, Txt, Button, Icon, DecorRing, TextField } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 
@@ -50,19 +50,15 @@ export default function ResetPassword() {
           />
         </View>
 
-        <View style={styles.inputWrap}>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="סיסמה חדשה"
-            placeholderTextColor={colors.faint}
-            secureTextEntry
-            autoCapitalize="none"
-            style={styles.input}
-            onSubmitEditing={submit}
-            returnKeyType="go"
-          />
-        </View>
+        <TextField
+          value={password}
+          onChangeText={setPassword}
+          placeholder="סיסמה חדשה"
+          secureTextEntry
+          autoCapitalize="none"
+          onSubmitEditing={submit}
+          returnKeyType="go"
+        />
 
         {error ? <Txt style={styles.error}>{error}</Txt> : null}
 
@@ -87,15 +83,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   code: { fontSize: 30, fontFamily: fonts.displayBold, color: colors.ink, textAlign: 'center', letterSpacing: 10 },
-  inputWrap: {
-    height: 54,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.hairlineStrong,
-    paddingHorizontal: 18,
-    justifyContent: 'center',
-  },
-  input: { fontSize: 15, color: colors.ink, fontFamily: fonts.body, textAlign: 'right', writingDirection: 'rtl' },
   error: { color: colors.danger, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center' },
 });

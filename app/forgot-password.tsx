@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen, Txt, Button, Icon, DecorRing } from '../src/components';
+import { Screen, Txt, Button, Icon, DecorRing, TextField } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 
@@ -35,20 +35,16 @@ export default function ForgotPassword() {
       </View>
 
       <View style={styles.body}>
-        <View style={styles.inputWrap}>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="האימייל שלך"
-            placeholderTextColor={colors.faint}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            style={styles.input}
-            onSubmitEditing={submit}
-            returnKeyType="send"
-          />
-        </View>
+        <TextField
+          value={email}
+          onChangeText={setEmail}
+          placeholder="האימייל שלך"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          onSubmitEditing={submit}
+          returnKeyType="send"
+        />
 
         {error ? <Txt style={styles.error}>{error}</Txt> : null}
 
@@ -64,15 +60,5 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.displayBold, fontSize: 48, lineHeight: 46, color: '#fff', marginTop: 14 },
   sub: { fontSize: 13.5, color: 'rgba(255,255,255,.75)', marginTop: 10, lineHeight: 20 },
   body: { flex: 1, paddingHorizontal: 22, paddingTop: 26 },
-  inputWrap: {
-    height: 54,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.hairlineStrong,
-    paddingHorizontal: 18,
-    justifyContent: 'center',
-  },
-  input: { fontSize: 15, color: colors.ink, fontFamily: fonts.body, textAlign: 'right', writingDirection: 'rtl' },
   error: { color: colors.danger, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center', marginTop: 12 },
 });
