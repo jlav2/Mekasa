@@ -18,6 +18,7 @@ import {
   Karantina_700Bold,
 } from '@expo-google-fonts/karantina';
 import { colors } from '../src/theme';
+import { useStore } from '../src/store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -38,6 +39,11 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [loaded, error]);
+
+  // Hydrate from Supabase (no-op when unconfigured — fixtures keep working)
+  useEffect(() => {
+    useStore.getState().hydrate();
+  }, []);
 
   if (!loaded && !error) return null;
 
