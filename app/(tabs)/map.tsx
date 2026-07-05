@@ -33,7 +33,9 @@ export default function Map() {
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
       <LiveMap
         onMarkerPress={(m) =>
-          router.push(m.state === 'tournament' ? '/tournament' : '/circle-detail')
+          m.state === 'tournament'
+            ? router.push('/tournament')
+            : router.push({ pathname: '/c/[id]', params: { id: m.id } })
         }
       >
         {/* top filters */}

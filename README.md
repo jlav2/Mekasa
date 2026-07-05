@@ -23,6 +23,8 @@ A **dev screen gallery** listing all 29 screens lives at the `/gallery` route �
 - **`src/data/`** — `models.ts` (domain types from the handoff), `fixtures.ts` (seed content), `beaches.ts` (geo data), `screens.ts` (gallery manifest).
 - **`src/store/`** — Zustand app store: circles, chat messages, notifications, current user. Actions: `joinCircle` (one-tap join → adds you, flips to live, emits chat events), `sendMessage`, `markAllRead`. In-memory only — resets on reload until a backend lands.
 - **`app/(tabs)/`** — the 4 tab roots under a real expo-router Tabs group; the floating pill bar is a custom `tabBar`, so screens keep state across tab switches. Badge = live unread count.
+- **`app/c/[id].tsx`** — dynamic circle route (the product's `mekasa.app/c/{id}` deep link): any circle in the store renders from data, with an in-app not-found fallback. `/circle-detail` redirects to `/c/frishman`; map markers, the map-list sheet and my-circles link by id, and chat takes `?circle={id}`. With the `mekasa` scheme this also gives native deep links (`mekasa://c/gordon`).
+- **`scripts/generate-assets.mjs`** — renders the app icon, Android adaptive icon set, favicon and splash from the 6d canvas recipe (sunset gradient, petrol wave, sand-ring, Karantina מקאסה wordmark) using sharp + opentype.js. Re-run with `node scripts/generate-assets.mjs` after tweaking.
 - **`CONVENTIONS.md`** — component API + RTL rules used to build the screens.
 
 ## RTL

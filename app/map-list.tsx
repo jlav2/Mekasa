@@ -27,7 +27,7 @@ const CIRCLES: Circle[] = [
     meta: "חסר שחקן · בינוניים · 300 מ'",
     action: 'הצטרף',
     actionKind: 'filled',
-    route: '/circle-detail',
+    route: '/c/frishman',
   },
   {
     id: 'c2',
@@ -39,7 +39,7 @@ const CIRCLES: Circle[] = [
     meta: "משחק חי · פתוח לכולם · 650 מ'",
     action: 'צפה',
     actionKind: 'outline',
-    route: '/circle-detail',
+    route: '/c/gordon',
   },
   {
     id: 'c3',
@@ -62,7 +62,7 @@ const CIRCLES: Circle[] = [
     meta: 'משחק חי · מקצוענים · 1.8 ק"מ',
     action: 'צפה',
     actionKind: 'outline',
-    route: '/circle-detail',
+    route: '/c/metzitzim',
   },
 ];
 
@@ -109,7 +109,9 @@ export default function MapList() {
       <View style={styles.mapWrap}>
         <LiveMap
           onMarkerPress={(m) =>
-            router.push(m.state === 'tournament' ? '/tournament' : '/circle-detail')
+            m.state === 'tournament'
+              ? router.push('/tournament')
+              : router.push({ pathname: '/c/[id]', params: { id: m.id } })
           }
         >
           <View style={styles.filterRow} pointerEvents="box-none">

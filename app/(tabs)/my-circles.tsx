@@ -101,7 +101,7 @@ export default function MyCircles() {
             title={`${own.sportLabel} · ${own.beachName}`}
             meta={`${own.startLabel} · פתחת את המעגל · חסרים ${ownMissing}`}
             badge={<Badge label="שלך" bg="rgba(255,107,44,.12)" color={colors.sunsetDeep} />}
-            onPress={() => router.push('/circle-detail')}
+            onPress={() => router.push({ pathname: '/c/[id]', params: { id: own.id } })}
           />
 
           {/* recurring pro teaser */}

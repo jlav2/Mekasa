@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt, Icon } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 import type { ChatMessage } from '../src/data/models';
 
-const CIRCLE_ID = 'frishman';
+const DEFAULT_CIRCLE_ID = 'frishman';
 
 type Msg = {
   id: string;
@@ -113,12 +113,14 @@ export default function Chat() {
   const scrollRef = useRef<ScrollView>(null);
   const [draft, setDraft] = useState('');
 
-  const circle = useStore((s) => s.circleById(CIRCLE_ID))!;
-  const messages = useStore((s) => s.messages).filter((m) => m.circleId === CIRCLE_ID).map(toMsg);
+  const { circle: circleParam } = useLocalSearchParams<{ circle?: string }>();
+  const circleId = circleParam || DEFAULT_CIRCLE_ID;
+  const circle = useStore((s) => s.circleById(circleId) ?? s.circleById(DEFAULT_CIRCLE_ID))!;
+  const messages = useStore((s) => s.messages).filter((m) => m.circleId === circle.id).map(toMsg);
   const sendMessage = useStore((s) => s.sendMessage);
 
   const send = (text: string) => {
-    sendMessage(CIRCLE_ID, text);
+    sendMessage(circle.id, text);
     setDraft('');
   };
 
@@ -145,11 +147,13 @@ export default function Chat() {
           <RingAvatar count={`${circle.players.length}/${circle.capacity}`} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Txt style={styles.headerTitle} numberOfLines={1}>
-              המעגל של עומר · חוף פרישמן
+              המעגל של {circle.hostName} · {circle.beachName}
             </Txt>
             <View style={styles.headerSubRow}>
               <View style={styles.liveDot} />
-              <Txt style={styles.headerSub}>משחק חי · {circle.players.length} שחקנים בצ'אט</Txt>
+              <Txt style={styles.headerSub}>
+                {circle.state === 'scheduled' ? circle.startLabel : 'משחק חי'} · {circle.players.length} שחקנים בצ'אט
+              </Txt>
             </View>
           </View>
           <View style={styles.pinBtn}>
