@@ -99,10 +99,10 @@ export default function CircleDetail() {
       <View style={styles.hero}>
         <DecorRing style={{ left: -70, top: -40 }} />
         <View style={styles.heroTopRow}>
-          <HeroIconButton onPress={() => router.back()}>
+          <HeroIconButton onPress={() => router.back()} accessibilityLabel="חזור">
             <Icon name="chevronRight" size={17} color="#fff" strokeWidth={2.4} />
           </HeroIconButton>
-          <HeroIconButton onPress={() => router.push('/circle-share')}>
+          <HeroIconButton onPress={() => router.push({ pathname: '/circle-share', params: { id: circle.id } })} accessibilityLabel="שתף מעגל">
             <Icon name="share" size={16} color="#fff" strokeWidth={1.8} />
           </HeroIconButton>
         </View>

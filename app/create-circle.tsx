@@ -111,7 +111,12 @@ export default function CreateCircle() {
         </View>
         <View style={{ flex: 1 }}>
           <Txt style={styles.sectionLabel}>רמה</Txt>
-          <Pressable style={styles.levelDropdown}>
+          <Pressable
+            style={styles.levelDropdown}
+            onPress={() => setLevelIdx((i) => (i + 1) % LEVELS.length)}
+            accessibilityRole="button"
+            accessibilityLabel={`רמה: ${LEVELS[levelIdx]}, הקש להחלפה`}
+          >
             <Txt style={styles.levelTxt}>{LEVELS[levelIdx]}</Txt>
             <Icon name="chevronDown" size={12} color={colors.muted} strokeWidth={1.8} />
           </Pressable>

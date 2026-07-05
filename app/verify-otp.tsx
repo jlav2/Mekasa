@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Screen, Txt, Button, Icon, DecorRing } from '../src/components';
@@ -9,10 +9,40 @@ export default function VerifyOtp() {
   const router = useRouter();
   const { email, name, username } = useLocalSearchParams<{ email: string; name: string; username: string }>();
   const verifyOtp = useStore((s) => s.verifyOtp);
+  const resendOtp = useStore((s) => s.resendOtp);
 
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
+
+  const startCooldown = () => {
+    setCooldown(30);
+    if (timer.current) clearInterval(timer.current);
+    timer.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1 && timer.current) clearInterval(timer.current);
+        return Math.max(0, c - 1);
+      });
+    }, 1000);
+  };
+
+  const resend = async () => {
+    if (cooldown > 0) return;
+    setError(null);
+    setNotice(null);
+    const res = await resendOtp(email ?? '');
+    if (res.ok) {
+      setNotice('שלחנו קוד חדש');
+      startCooldown();
+    } else {
+      setError(res.error ?? 'שליחת הקוד נכשלה');
+    }
+  };
 
   const submit = async () => {
     if (code.length < 6) return setError('הזן את הקוד בן 6 הספרות');
@@ -28,7 +58,7 @@ export default function VerifyOtp() {
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }} keyboardAvoiding>
       <View style={styles.hero}>
         <DecorRing style={{ left: -70, top: -40 }} />
-        <Pressable style={styles.back} onPress={() => router.back()}>
+        <Pressable style={styles.back} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="חזור">
           <Icon name="chevronRight" size={18} color="#fff" strokeWidth={2.4} />
         </Pressable>
         <Txt style={styles.title}>בדוק את{'\n'}האימייל</Txt>
@@ -50,12 +80,16 @@ export default function VerifyOtp() {
         </View>
 
         {error ? <Txt style={styles.error}>{error}</Txt> : null}
+        {notice ? <Txt style={styles.notice}>{notice}</Txt> : null}
 
         <Button label="אימות והמשך" size="lg" loading={busy} onPress={submit} style={{ marginTop: 8 }} />
 
-        <Txt style={styles.hint}>
-          לא קיבלת? בדוק ספאם, או חזור אחורה כדי לנסות אימייל אחר.
-        </Txt>
+        <Pressable onPress={resend} disabled={cooldown > 0} accessibilityRole="button" style={{ alignSelf: 'center', marginTop: 16 }}>
+          <Txt style={[styles.resend, cooldown > 0 && { color: colors.faint, textDecorationLine: 'none' }]}>
+            {cooldown > 0 ? `שלח קוד מחדש (${cooldown})` : 'שלח קוד מחדש'}
+          </Txt>
+        </Pressable>
+        <Txt style={styles.hint}>לא קיבלת? בדוק גם בתיקיית הספאם.</Txt>
       </View>
     </Screen>
   );
@@ -83,5 +117,7 @@ const styles = StyleSheet.create({
     letterSpacing: 10,
   },
   error: { color: colors.danger, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center', marginTop: 12 },
-  hint: { fontSize: 12.5, color: colors.faint, fontFamily: fonts.medium, textAlign: 'center', marginTop: 16, lineHeight: 18 },
+  notice: { color: colors.liveDeep, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center', marginTop: 12 },
+  resend: { fontSize: 13.5, color: colors.petrol, fontFamily: fonts.bold, textDecorationLine: 'underline' },
+  hint: { fontSize: 12.5, color: colors.faint, fontFamily: fonts.medium, textAlign: 'center', marginTop: 12, lineHeight: 18 },
 });

@@ -27,6 +27,7 @@ import {
   upsertProfile,
   usernameAvailable,
   verifyEmailOtp,
+  resendEmailOtp,
   type AuthResult,
 } from '../data/backend';
 import { BEACH_OPTIONS, distanceLabelFrom, type BeachOption } from '../data/beaches';
@@ -81,6 +82,7 @@ type AppState = {
     username: string,
   ) => Promise<AuthResult & { name: string; username: string; email: string }>;
   verifyOtp: (email: string, token: string, name: string, username: string) => Promise<AuthResult>;
+  resendOtp: (email: string) => Promise<AuthResult>;
   logIn: (identifier: string, password: string) => Promise<AuthResult>;
   signInWithProvider: (provider: 'apple' | 'google') => Promise<AuthResult>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
@@ -306,6 +308,8 @@ export const useStore = create<AppState>((set, get) => ({
     if (res.ok && res.userId) await goLive(set, get, res.userId, 'user', name, username);
     return res;
   },
+
+  resendOtp: (email) => resendEmailOtp(email),
 
   logIn: async (identifier, password) => {
     const res = await signInPassword(identifier, password);

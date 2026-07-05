@@ -42,14 +42,24 @@ export default function Map() {
     [circles, filter],
   );
   const markers = useMemo(() => markersFromCircles(filtered), [filtered]);
-  const nearest = useStore((s) => s.circles.find((c) => c.id === 'frishman'))!;
-  const joined = useStore((s) => s.isJoined('frishman'));
+  // Featured card follows the active filter: prefer a circle that still needs a
+  // player, then a live game, then anything matching (null → no card).
+  const featured = useMemo(
+    () =>
+      filtered.find((c) => c.state === 'missing') ??
+      filtered.find((c) => c.state === 'live') ??
+      filtered[0] ??
+      null,
+    [filtered],
+  );
+  const joined = useStore((s) => (featured ? s.isJoined(featured.id) : false));
   const joinCircle = useStore((s) => s.joinCircle);
-  const missing = nearest.capacity - nearest.players.length;
+  const missing = featured ? featured.capacity - featured.players.length : 0;
 
   const onJoin = () => {
-    if (!joined) joinCircle(nearest.id);
-    router.push('/chat');
+    if (!featured) return;
+    if (!joined) joinCircle(featured.id);
+    router.push({ pathname: '/chat', params: { circle: featured.id } });
   };
 
   return (
@@ -103,41 +113,47 @@ export default function Map() {
         </View>
       </LiveMap>
 
-      {/* bottom floating card — nearest circle (live from store) */}
-      <Animated.View entering={FadeInDown.duration(400)} style={styles.card}>
-      <Card floating radius={24} pad={16}>
-        <View style={styles.statusRow}>
-          <StatusDot color={joined ? colors.live : colors.sunset} size={9} />
-          <Txt style={[styles.statusTxt, joined && { color: colors.liveDeep }]}>
-            {joined ? 'אתה בפנים — משחק חי' : `חסר שחקן · ${nearest.distanceLabel}`}
-          </Txt>
-          <Txt style={styles.nowTxt}>עכשיו</Txt>
-        </View>
-        <View style={styles.mainRow}>
-          <View style={{ flex: 1 }}>
-            <Txt style={styles.title}>
-              {nearest.sportLabel} · {nearest.beachName}
-            </Txt>
-            <Txt style={styles.meta}>רמה בינונית · {nearest.court}</Txt>
-          </View>
-          <AvatarStack
-            people={nearest.players.map((p) => ({ letter: p.avatarInitial, color: p.avatarColor }))}
-            size={38}
-            border={colors.card}
-            emptySlot={missing > 0}
-            emptyLabel="+"
-            emptyBorder={colors.sunset}
-          />
-        </View>
-        <Button
-          label={joined ? 'פתח צ׳אט המעגל' : 'אני בפנים'}
-          variant={joined ? 'live' : 'primary'}
-          size="lg"
-          style={{ marginTop: 14 }}
-          onPress={onJoin}
-        />
-      </Card>
-      </Animated.View>
+      {/* bottom floating card — featured circle from the filtered set */}
+      {featured && (
+        <Animated.View entering={FadeInDown.duration(400)} style={styles.card}>
+          <Card floating radius={24} pad={16}>
+            <View style={styles.statusRow}>
+              <StatusDot color={joined ? colors.live : featured.state === 'live' ? colors.live : colors.sunset} size={9} />
+              <Txt style={[styles.statusTxt, (joined || featured.state === 'live') && { color: colors.liveDeep }]}>
+                {joined
+                  ? 'אתה בפנים'
+                  : featured.state === 'live'
+                    ? `משחק חי · ${featured.distanceLabel}`
+                    : `${missing === 1 ? 'חסר שחקן' : `חסרים ${missing}`} · ${featured.distanceLabel}`}
+              </Txt>
+              <Txt style={styles.nowTxt}>עכשיו</Txt>
+            </View>
+            <View style={styles.mainRow}>
+              <View style={{ flex: 1 }}>
+                <Txt style={styles.title}>
+                  {featured.sportLabel} · {featured.beachName}
+                </Txt>
+                <Txt style={styles.meta}>{featured.levelLabel} · {featured.court}</Txt>
+              </View>
+              <AvatarStack
+                people={featured.players.map((p) => ({ letter: p.avatarInitial, color: p.avatarColor }))}
+                size={38}
+                border={colors.card}
+                emptySlot={missing > 0}
+                emptyLabel="+"
+                emptyBorder={colors.sunset}
+              />
+            </View>
+            <Button
+              label={joined ? 'פתח צ׳אט המעגל' : featured.state === 'live' ? 'צפה במעגל' : 'אני בפנים'}
+              variant={joined || featured.state === 'live' ? 'live' : 'primary'}
+              size="lg"
+              style={{ marginTop: 14 }}
+              onPress={onJoin}
+            />
+          </Card>
+        </Animated.View>
+      )}
 
     </View>
   );

@@ -192,6 +192,14 @@ export async function signUpEmail(
   return { ok: true, userId: data.user?.id, needsConfirmation: !data.session };
 }
 
+// Re-send the signup confirmation code (same 6-digit email OTP).
+export async function resendEmailOtp(email: string): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  const { error } = await supabase.auth.resend({ type: 'signup', email });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 // 6-digit code from the confirmation email (in-app, no magic-link app hopping).
 export async function verifyEmailOtp(email: string, token: string): Promise<AuthResult> {
   if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };

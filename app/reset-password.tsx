@@ -30,7 +30,7 @@ export default function ResetPassword() {
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }} keyboardAvoiding>
       <View style={styles.hero}>
         <DecorRing style={{ left: -70, top: -40 }} />
-        <Pressable style={styles.back} onPress={() => router.back()}>
+        <Pressable style={styles.back} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="חזור">
           <Icon name="chevronRight" size={18} color="#fff" strokeWidth={2.4} />
         </Pressable>
         <Txt style={styles.title}>סיסמה{'\n'}חדשה</Txt>

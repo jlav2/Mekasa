@@ -1,11 +1,29 @@
-import { View, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, StyleSheet, Linking, Platform } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Screen, Txt, Button, Icon, WhatsappGlyph, DecorRing } from '../src/components';
 import { colors, fonts } from '../src/theme';
+import { useStore } from '../src/store';
 
 export default function CircleShare() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const circle = useStore((s) => (id ? s.circleById(id) : undefined)) ?? useStore((s) => s.circles[0]);
+
+  const missing = circle ? circle.capacity - circle.players.length : 0;
+  const link = `mekasa.app/c/${circle?.id ?? ''}`;
+  const shareText = circle
+    ? `${circle.hostName} פתח מעגל ${circle.sportLabel} ב${circle.beachName} · ${circle.startLabel}. מצטרפים בלחיצה: https://${link}`
+    : '';
+
+  const shareWhatsapp = () => {
+    const url = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') window.open(url, '_blank');
+    } else {
+      Linking.openURL(url).catch(() => router.push('/map'));
+    }
+  };
 
   return (
     <Screen scroll edges={{ top: true, bottom: true }} contentStyle={{ paddingTop: 30, flexGrow: 1 }}>
@@ -56,15 +74,17 @@ export default function CircleShare() {
               <DecorRing size={130} opacity={0.15} style={{ left: -36, top: -24 }} />
               <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
                 <View style={styles.missingBadge}>
-                  <Txt style={{ fontSize: 10.5, fontFamily: fonts.extrabold, color: '#fff' }}>חסרים 3</Txt>
+                  <Txt style={{ fontSize: 10.5, fontFamily: fonts.extrabold, color: '#fff' }}>
+                    {missing <= 0 ? 'מלא' : missing === 1 ? 'חסר 1' : `חסרים ${missing}`}
+                  </Txt>
                 </View>
-                <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.6)' }}>mekasa.app/c/8kq2</Txt>
+                <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.6)' }}>{link}</Txt>
               </View>
               <Txt style={{ fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 30, color: '#fff', marginTop: 8 }}>
-                אלטינה · חוף גורדון · ראשון 18:00
+                {circle ? `${circle.sportLabel} · ${circle.beachName} · ${circle.startLabel}` : ''}
               </Txt>
               <Txt style={{ fontSize: 12, color: 'rgba(255,255,255,.7)', marginTop: 4 }}>
-                גיא פתח מעגל · לחץ להצטרף בשנייה
+                {circle ? `${circle.hostName} פתח מעגל · לחץ להצטרף בשנייה` : ''}
               </Txt>
             </View>
             <View style={styles.previewFooter}>
@@ -86,7 +106,7 @@ export default function CircleShare() {
             variant="whatsapp"
             size="lg"
             icon={<WhatsappGlyph size={22} />}
-            onPress={() => router.push('/map')}
+            onPress={shareWhatsapp}
           />
           <View style={{ flexDirection: 'row-reverse', gap: 10 }}>
             <Button

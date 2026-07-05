@@ -102,7 +102,8 @@ export default function Profile() {
             {user.city} · משחק מ־{user.memberSince}
           </Txt>
         </View>
-        <Pressable onPress={() => router.push('/settings')} hitSlop={10}>
+        <Pressable onPress={() => router.push('/settings')} hitSlop={10} accessibilityRole="button" accessibilityLabel="הגדרות">
+
           <Svg width={20} height={20} viewBox="0 0 20 20">
             <Circle cx={10} cy={10} r={2} fill={colors.muted} />
             <Circle cx={10} cy={4} r={2} fill={colors.muted} />

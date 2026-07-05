@@ -1,5 +1,6 @@
 // Real Tel Aviv beach coordinates for the live map.
 import type { MarkerState } from '../components/MapMarker';
+import { TOURNAMENT } from './fixtures';
 
 export type CircleMarkerData = {
   id: string;
@@ -131,6 +132,11 @@ export function markersFromCircles(circles: CircleLike[]): CircleMarkerData[] {
         rotate: base?.rotate ?? ((h % 12) * 30 - 180),
       };
     });
-  const tournament = CIRCLE_MARKERS.find((m) => m.state === 'tournament');
+  // Tournament marker derived from the real tournament record (placed at its
+  // beach), not a hardcoded map pin decoupled from any data.
+  const tBeach = BEACH_OPTIONS.find((b) => b.id === TOURNAMENT.beachId);
+  const tournament: CircleMarkerData | null = tBeach
+    ? { id: TOURNAMENT.id, beach: TOURNAMENT.beachName, lat: tBeach.lat, lng: tBeach.lng, state: 'tournament', size: 48, variant: 2, rotate: -60 }
+    : null;
   return tournament ? [...live, tournament] : live;
 }

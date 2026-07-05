@@ -35,6 +35,20 @@ const toMsg = (m: ChatMessage): Msg => ({
 
 const QUICK_REPLIES = ['בדרך 🏃', 'מביא כדור', "עוד 10 דק'"];
 
+function ChatNotFound({ onBack }: { onBack: () => void }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.sandBg, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24 }}>
+      <Txt style={{ fontFamily: fonts.displayBold, fontSize: 34, color: colors.petrol }}>הצ'אט לא נמצא</Txt>
+      <Txt style={{ fontSize: 13.5, color: colors.muted, fontFamily: fonts.medium, textAlign: 'center' }}>
+        המעגל כנראה נסגר. חזור למפה למצוא משחק פעיל.
+      </Txt>
+      <Pressable onPress={onBack} accessibilityRole="button" style={{ marginTop: 12, backgroundColor: colors.petrol, borderRadius: 24, paddingHorizontal: 28, paddingVertical: 12 }}>
+        <Txt style={{ color: '#fff', fontFamily: fonts.bold, fontSize: 15 }}>למפה</Txt>
+      </Pressable>
+    </View>
+  );
+}
+
 function RingAvatar({ count }: { count: string }) {
   return (
     <RingBadge size={46} color={colors.live} variant={0} strokeWidth={3.5} inset={6}>
@@ -101,10 +115,16 @@ export default function Chat() {
   const [draft, setDraft] = useState('');
 
   const { circle: circleParam } = useLocalSearchParams<{ circle?: string }>();
-  const circleId = circleParam || DEFAULT_CIRCLE_ID;
-  const circle = useStore((s) => s.circleById(circleId) ?? s.circleById(DEFAULT_CIRCLE_ID))!;
-  const messages = useStore((s) => s.messages).filter((m) => m.circleId === circle.id).map(toMsg);
+  // No param → the map's nearest circle. An explicit-but-unknown id resolves to
+  // nothing (not-found) rather than silently masquerading as another circle.
+  const requested = circleParam || DEFAULT_CIRCLE_ID;
+  const circle = useStore((s) => s.circleById(requested));
+  const allMessages = useStore((s) => s.messages);
   const sendMessage = useStore((s) => s.sendMessage);
+
+  if (!circle) return <ChatNotFound onBack={() => router.replace('/map')} />;
+
+  const messages = allMessages.filter((m) => m.circleId === circle.id).map(toMsg);
 
   const send = (text: string) => {
     sendMessage(circle.id, text);
@@ -120,7 +140,7 @@ export default function Chat() {
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
         <DecorRing size={170} opacity={0.13} style={{ left: -50, top: -30 }} />
         <View style={styles.headerRow}>
-          <HeroIconButton size={36} onPress={() => router.back()}>
+          <HeroIconButton size={36} onPress={() => router.back()} accessibilityLabel="חזור">
             <Icon name="chevronRight" size={20} color="#fff" strokeWidth={2.4} />
           </HeroIconButton>
           <RingAvatar count={`${circle.players.length}/${circle.capacity}`} />

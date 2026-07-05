@@ -88,7 +88,8 @@ export default function Settings() {
   return (
     <Screen scroll contentStyle={{ paddingBottom: 60 }}>
       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginTop: 8 }}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="חזור">
+
           <Icon name="chevronRight" size={16} color={colors.petrol} strokeWidth={2.4} />
         </Pressable>
         <Txt style={{ fontFamily: fonts.displayBold, fontSize: 44, lineHeight: 44, color: colors.petrol }}>הגדרות</Txt>

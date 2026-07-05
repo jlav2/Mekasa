@@ -410,15 +410,19 @@ export function HeroIconButton({
   onPress,
   style,
   children,
+  accessibilityLabel,
 }: {
   size?: number;
   onPress?: () => void;
   style?: ViewStyle;
   children: ReactNode;
+  accessibilityLabel?: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       style={[
         {
           width: size,

@@ -7,6 +7,7 @@ import { LiveMap, Txt, Chip, Icon, RingBadge, TabBar } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 import { useStore } from '../src/store';
 import { markersFromCircles } from '../src/data/beaches';
+import { TOURNAMENT } from '../src/data/fixtures';
 
 // Sheet snap positions as fractions of window height
 const EXPANDED_TOP = 0.15;
@@ -25,55 +26,7 @@ type Circle = {
   route: string;
 };
 
-const CIRCLES: Circle[] = [
-  {
-    id: 'c1',
-    state: 'missing',
-    count: '3/4',
-    variant: 1,
-    rotate: 40,
-    title: "פוצ'יוולי · חוף פרישמן",
-    meta: "חסר שחקן · בינוניים · 300 מ'",
-    action: 'הצטרף',
-    actionKind: 'filled',
-    route: '/c/frishman',
-  },
-  {
-    id: 'c2',
-    state: 'live',
-    count: '4/4',
-    variant: 0,
-    rotate: -30,
-    title: 'אלטינה · חוף גורדון',
-    meta: "משחק חי · פתוח לכולם · 650 מ'",
-    action: 'צפה',
-    actionKind: 'outline',
-    route: '/c/gordon',
-  },
-  {
-    id: 'c3',
-    state: 'tournament',
-    variant: 2,
-    rotate: -70,
-    title: "טורניר פוצ'יוולי · חוף הילטון",
-    meta: 'שבת 9:00 · 8 קבוצות · 1.2 ק"מ',
-    action: 'הרשמה',
-    actionKind: 'outline',
-    route: '/tournament',
-  },
-  {
-    id: 'c4',
-    state: 'live',
-    count: '6/6',
-    variant: 0,
-    rotate: 80,
-    title: 'כדורעף חופים · מצודת הים',
-    meta: 'משחק חי · מקצוענים · 1.8 ק"מ',
-    action: 'צפה',
-    actionKind: 'outline',
-    route: '/c/metzitzim',
-  },
-];
+const rowHash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
 
 function RingThumb({ circle }: { circle: Circle }) {
   const color = circle.state === 'live' ? colors.live : circle.state === 'missing' ? colors.sunset : colors.petrol;
@@ -113,6 +66,44 @@ export default function MapList() {
   const { height: winH } = useWindowDimensions();
   const storeCircles = useStore((st) => st.circles);
   const markers = useMemo(() => markersFromCircles(storeCircles), [storeCircles]);
+
+  // Rows derived from the same store the markers come from (was a hardcoded list).
+  const rows = useMemo<Circle[]>(() => {
+    const live = storeCircles
+      .filter((c) => c.state === 'live' || c.state === 'missing')
+      .map((c): Circle => {
+        const missing = c.capacity - c.players.length;
+        const h = Math.abs(rowHash(c.id));
+        return {
+          id: c.id,
+          state: c.state === 'live' ? 'live' : 'missing',
+          count: `${c.players.length}/${c.capacity}`,
+          variant: h % 4,
+          rotate: (h % 12) * 30 - 180,
+          title: `${c.sportLabel} · ${c.beachName}`,
+          meta:
+            c.state === 'live'
+              ? `משחק חי · ${c.levelLabel} · ${c.distanceLabel}`
+              : `${missing === 1 ? 'חסר שחקן' : `חסרים ${missing}`} · ${c.levelLabel} · ${c.distanceLabel}`,
+          action: c.state === 'live' ? 'צפה' : 'הצטרף',
+          actionKind: c.state === 'missing' ? 'filled' : 'outline',
+          route: `/c/${c.id}`,
+        };
+      });
+    const tournament: Circle = {
+      id: TOURNAMENT.id,
+      state: 'tournament',
+      variant: 2,
+      rotate: -70,
+      title: `טורניר · ${TOURNAMENT.beachName}`,
+      meta: `${TOURNAMENT.dateLabel} · ${TOURNAMENT.teamsRegistered}/${TOURNAMENT.teamsCap} קבוצות`,
+      action: 'הרשמה',
+      actionKind: 'outline',
+      route: '/tournament',
+    };
+    return [...live, tournament];
+  }, [storeCircles]);
+  const circleCount = rows.filter((r) => r.state !== 'tournament').length;
 
   // 0 = expanded, restOffset = default half-screen position
   const restOffset = (DEFAULT_TOP - EXPANDED_TOP) * winH;
@@ -172,14 +163,14 @@ export default function MapList() {
           <View style={styles.grabZone}>
             <View style={styles.dragHandle} />
             <View style={styles.sheetHeader}>
-              <Txt style={styles.sheetTitle}>5 מעגלים סביבך</Txt>
+              <Txt style={styles.sheetTitle}>{circleCount} מעגלים סביבך</Txt>
               <Txt style={styles.sheetSub}>ת&quot;א · יפו</Txt>
             </View>
           </View>
         </GestureDetector>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
-          {CIRCLES.map((c, i) => (
-            <CircleRow key={c.id} circle={c} last={i === CIRCLES.length - 1} onPress={() => router.push(c.route as any)} />
+          {rows.map((c, i) => (
+            <CircleRow key={c.id} circle={c} last={i === rows.length - 1} onPress={() => router.push(c.route as any)} />
           ))}
         </ScrollView>
       </Animated.View>
