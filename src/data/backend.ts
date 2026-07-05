@@ -196,6 +196,30 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut().catch(warn('signOut'));
 }
 
+// Send a password-recovery email (6-digit code when the recovery template uses
+// {{ .Token }}; link otherwise). Delivery needs an SMTP provider configured.
+export async function requestPasswordReset(email: string): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  const redirectTo = makeRedirectUri({ scheme: 'mekasa', path: 'auth-callback' });
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// Verify the recovery code (establishes a session), then set the new password.
+export async function confirmPasswordReset(
+  email: string,
+  token: string,
+  newPassword: string,
+): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'recovery' });
+  if (error) return { ok: false, error: error.message };
+  const { error: upErr } = await supabase.auth.updateUser({ password: newPassword });
+  if (upErr) return { ok: false, error: upErr.message };
+  return { ok: true, userId: data.user?.id };
+}
+
 // Apple / Google OAuth. Web: full-page redirect (supabase parses the hash on
 // return via detectSessionInUrl). Native: open the provider in a web browser,
 // then exchange the returned PKCE code for a session. Requires the provider to

@@ -130,6 +130,10 @@ export default function Login() {
           />
         </View>
 
+        <Pressable onPress={() => router.push('/forgot-password')} style={{ alignSelf: 'flex-start' }}>
+          <Txt style={styles.forgot}>שכחת סיסמה?</Txt>
+        </Pressable>
+
         {error ? <Txt style={styles.error}>{error}</Txt> : null}
 
         <Button label="התחבר" size="lg" loading={busy} onPress={submit} style={{ marginTop: 2 }} />
@@ -189,6 +193,7 @@ const styles = StyleSheet.create({
   },
   input: { fontSize: 15, color: colors.ink, fontFamily: fonts.body, textAlign: 'right', writingDirection: 'rtl' },
   error: { color: colors.danger, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center' },
+  forgot: { fontSize: 12.5, color: colors.petrol, fontFamily: fonts.bold, textDecorationLine: 'underline', marginTop: -4 },
   linkRow: { flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 6 },
   muted: { fontSize: 13.5, color: colors.muted, fontFamily: fonts.medium },
   link: { fontSize: 13.5, color: colors.petrol, fontFamily: fonts.bold, textDecorationLine: 'underline' },
