@@ -18,7 +18,7 @@ The app opens on **Login (1a)** and flows like the real product: login → sport
 Without configuration the app runs in offline demo mode (in-memory fixtures, resets on reload). To go live:
 
 1. Create a project at [supabase.com](https://supabase.com) (free tier is fine).
-2. In the SQL editor, run [`supabase/schema.sql`](supabase/schema.sql), then [`supabase/seed.sql`](supabase/seed.sql).
+2. Link it and apply the schema: `supabase link --project-ref <ref>` then `supabase db push`. The ordered migrations in [`supabase/migrations/`](supabase/migrations/) are the single source of truth (schema → seed → auth/RLS → hardening); there is no separate `schema.sql`/`seed.sql` to keep in sync.
 3. `cp .env.example .env` and fill in the URL + anon key from Settings → API.
 4. Restart `npx expo start`. Joins, chat and read-state now persist, and realtime pushes live player counts / messages / badges to every open client.
 
