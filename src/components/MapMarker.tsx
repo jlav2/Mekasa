@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { memo, ReactNode } from 'react';
 import { View, ViewStyle } from 'react-native';
 import { SandRing } from './SandRing';
 import { PulseHalo } from './ui';
@@ -16,7 +16,7 @@ const stateColor: Record<MarkerState, string> = {
 };
 
 // Sand-ring circle marker sized by proximity/importance (44–72px).
-export function MapMarker({
+function MapMarkerBase({
   state = 'neutral',
   size = 56,
   count,
@@ -59,3 +59,6 @@ function Content({ state, count, label, color, size }: { state: MarkerState; cou
     </View>
   );
 }
+
+// Memoized: markers re-render on every map/store update otherwise.
+export const MapMarker = memo(MapMarkerBase);

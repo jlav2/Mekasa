@@ -44,6 +44,7 @@ Gradients exported: `skyGradient`, `petrolGradient`, `beachHeroGradient`, `proGr
 - `<SportIcon sport="footvolley|altinha|volleyball" size color strokeWidth />`.
 - Brand glyphs: `<AppleGlyph/> <GoogleGlyph/> <FacebookGlyph/> <WhatsappGlyph/>`.
 - `<SandRing size color strokeWidth variant rotate fill>{children}</SandRing>` — the signature hand-drawn circle. Vary `variant` (0–4) and `rotate` per instance.
+- SVG perf: every react-native-svg element is a native view with no draw cache, so the leaf SVG components (`Icon`, `SportIcon`, `SandRing`, `DecorRing`, `MapMarker`) are `memo`ized — keep their props primitive (no fresh objects/arrays except `style`, which `DecorRing` compares by contents). New repeated SVG components should follow the same pattern.
 - `<DecorRing size color opacity variant rotate strokeWidth style />` — faded oversized ring, absolutely positioned as hero/card decoration; pass offsets via `style` (`{ left: -70, top: -40 }`). Defaults: white, opacity .14, strokeWidth 2, variant 1. Don't hand-roll decorative Svg circles.
 - `<RingBadge size color centerBg variant rotate strokeWidth inset>{content}</RingBadge>` — sand ring around a solid center disc (count badges, list-row thumbs, chat header avatar). `inset` controls the ring→disc gap (default 9 on 48).
 - `<HeroIconButton size onPress>{icon}</HeroIconButton>` — translucent round icon button for petrol heroes (back/share). Default 38, use 36 on compact headers.

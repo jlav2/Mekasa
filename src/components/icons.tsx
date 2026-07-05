@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Svg, {
   Path,
   Circle,
@@ -51,7 +52,7 @@ type IconProps = {
   fill?: string;
 };
 
-export function Icon({
+function IconBase({
   name,
   size = 22,
   color = colors.ink,
@@ -290,8 +291,12 @@ function render(name: IconName, c: any, color: string) {
   }
 }
 
+// Memoized: SVG elements are native views with no draw cache — skip
+// reconciling the glyph tree when props are unchanged.
+export const Icon = memo(IconBase);
+
 // ---- Sport icons (line-art, per handoff) ----
-export function SportIcon({
+function SportIconBase({
   sport,
   size = 26,
   color = colors.petrol,
@@ -406,5 +411,7 @@ export function WhatsappGlyph({ size = 20, color = '#fff' }) {
     </Svg>
   );
 }
+
+export const SportIcon = memo(SportIconBase);
 
 export { Svg, Path, Circle, Line, Rect, Polyline, G };

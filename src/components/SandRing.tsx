@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { memo, ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { colors } from '../theme';
@@ -13,7 +13,7 @@ const DASH_PRESETS = [
   '66 10 50 12 56 9',
 ];
 
-export function SandRing({
+function SandRingBase({
   size = 64,
   color = colors.petrol,
   strokeWidth = 3.5,
@@ -63,9 +63,13 @@ export function SandRing({
   );
 }
 
+// Memoized: primitive props, so unrelated re-renders skip the whole ring tree.
+// (Memo only helps call sites without children — decor rings, badges, markers.)
+export const SandRing = memo(SandRingBase);
+
 // Faded oversized ring, absolutely positioned as hero/card decoration.
 // Callers pass position offsets via `style` ({ left: -70, top: -40 }).
-export function DecorRing({
+function DecorRingBase({
   size = 240,
   color = '#fff',
   opacity = 0.14,
@@ -93,6 +97,22 @@ export function DecorRing({
     />
   );
 }
+
+// Call sites pass inline style literals ({ left: -70, top: -40 }) whose identity
+// changes every render — compare style by contents so the memo actually holds.
+export const DecorRing = memo(DecorRingBase, (prev, next) => {
+  if (
+    prev.size !== next.size ||
+    prev.color !== next.color ||
+    prev.opacity !== next.opacity ||
+    prev.variant !== next.variant ||
+    prev.rotate !== next.rotate ||
+    prev.strokeWidth !== next.strokeWidth
+  ) {
+    return false;
+  }
+  return prev.style === next.style || JSON.stringify(prev.style) === JSON.stringify(next.style);
+});
 
 // Sand ring around a solid center disc — the count/glyph badge used in
 // notifications, list rows and chat headers.
