@@ -38,7 +38,7 @@ export default function BeachPicker() {
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }}>
       <View style={styles.topArea}>
         <View style={styles.titleRow}>
-          <Pressable style={styles.closeBtn} onPress={() => router.back()}>
+          <Pressable style={styles.closeBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="סגור">
             <Icon name="close" size={12} color={colors.muted} strokeWidth={2} />
           </Pressable>
           <Txt style={styles.title}>איפה משחקים?</Txt>

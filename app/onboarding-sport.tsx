@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Screen,
@@ -23,13 +23,19 @@ const SPORTS: Sport[] = [
 
 export default function OnboardingSport() {
   const router = useRouter();
+  const storedName = useStore((s) => s.user.name);
+  // 'אורח' is the guest placeholder — start blank so guests type a real name;
+  // real accounts (from signup) see their name prefilled and can tweak it.
+  const [name, setName] = useState(storedName === 'אורח' ? '' : storedName);
   const [selected, setSelected] = useState<string[]>(['footvolley', 'altinha']);
   const [level, setLevel] = useState(1);
   const setSports = useStore((s) => s.setSports);
+  const setNameAction = useStore((s) => s.setName);
   const toggle = (k: string) =>
     setSelected((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]));
 
   const proceed = () => {
+    if (name.trim()) setNameAction(name);
     // segmented index 0..2 → level 1..3
     const lvl = (level + 1) as Level;
     setSports(
@@ -53,7 +59,19 @@ export default function OnboardingSport() {
         </Txt>
         <Txt variant="secondary" style={{ marginTop: 6, fontSize: 14.5 }}>אפשר לבחור יותר מענף אחד</Txt>
 
-        <View style={{ gap: 12, marginTop: 22 }}>
+        <View style={styles.nameWrap}>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="איך קוראים לך? (השם שיופיע במעגלים)"
+            placeholderTextColor={colors.faint}
+            style={styles.nameInput}
+            maxLength={24}
+            accessibilityLabel="שם תצוגה"
+          />
+        </View>
+
+        <View style={{ gap: 12, marginTop: 18 }}>
           {SPORTS.map((sp) => {
             const on = selected.includes(sp.key);
             return (
@@ -96,6 +114,17 @@ export default function OnboardingSport() {
 }
 
 const styles = StyleSheet.create({
+  nameWrap: {
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.hairlineStrong,
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+    marginTop: 18,
+  },
+  nameInput: { fontSize: 15, color: colors.ink, fontFamily: fonts.body, textAlign: 'right', writingDirection: 'rtl' },
   card: { flexDirection: 'row-reverse', alignItems: 'center', gap: 16, borderRadius: 22, padding: 16 },
   cardOn: { backgroundColor: colors.petrol, ...shadows.petrolHero },
   cardOff: { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.hairlineStrong },

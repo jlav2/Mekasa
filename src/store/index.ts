@@ -92,6 +92,7 @@ type AppState = {
   checkUsername: (username: string) => Promise<boolean>;
   setDraftBeach: (beach: BeachOption) => void;
   setSports: (sports: SportProfile[]) => void;
+  setName: (name: string) => void;
   cycleFilter: (key: keyof MapFilter) => void;
   createCircle: (input: CreateCircleInput) => string;
   joinCircle: (circleId: string) => void;
@@ -201,7 +202,11 @@ async function runGoLive(
   }
 
   const data = await fetchAll();
-  if (data) set({ ...data, live: true });
+  // Fetch failed → stay on the offline fixture seed rather than a half-live state
+  // (real identity over fixture circles, subscribed but never `live`). A later
+  // hydrate/auth action retries, since `live` stays false and the guard clears.
+  if (!data) return;
+  set({ ...data, live: true });
   subscribeAll(set);
 }
 
@@ -387,6 +392,24 @@ export const useStore = create<AppState>((set, get) => ({
         isPro: user.isPro,
         sports,
         homeBeaches: user.homeBeaches,
+      });
+    }
+  },
+
+  setName: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const user = { ...get().user, name: trimmed, avatarInitial: deriveInitial(trimmed) };
+    set({ user });
+    if (get().live) {
+      // Identity-only write — omit sports/homeBeaches so a concurrent setSports
+      // (both fire from onboarding's "continue") can't be clobbered by a stale value.
+      upsertProfile({
+        userId: user.id,
+        name: user.name,
+        avatarInitial: user.avatarInitial,
+        avatarColor: user.avatarColor,
+        isPro: user.isPro,
       });
     }
   },

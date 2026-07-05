@@ -52,7 +52,7 @@ export default function CreateCircle() {
     <Screen bg={colors.sandBg} contentStyle={{ paddingTop: 70, paddingBottom: 40, flexGrow: 1 }}>
       <View style={styles.titleRow}>
         <Txt style={styles.title}>פותחים מעגל</Txt>
-        <Pressable style={styles.closeBtn} onPress={() => router.back()}>
+        <Pressable style={styles.closeBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="סגור">
           <Icon name="close" size={13} color={colors.muted} strokeWidth={2} />
         </Pressable>
       </View>

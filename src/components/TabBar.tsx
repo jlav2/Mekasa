@@ -55,6 +55,9 @@ export function TabBar({ active }: { active: TabKey }) {
               key={t.key}
               style={styles.tab}
               onPress={() => !isActive && router.replace(t.route as any)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={badge > 0 ? `${t.label}, ${badge} חדשות` : t.label}
             >
               <View>
                 <TabIcon tab={t.key} active={isActive} />
