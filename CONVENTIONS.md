@@ -44,6 +44,9 @@ Gradients exported: `skyGradient`, `petrolGradient`, `beachHeroGradient`, `proGr
 - `<SportIcon sport="footvolley|altinha|volleyball" size color strokeWidth />`.
 - Brand glyphs: `<AppleGlyph/> <GoogleGlyph/> <FacebookGlyph/> <WhatsappGlyph/>`.
 - `<SandRing size color strokeWidth variant rotate fill>{children}</SandRing>` — the signature hand-drawn circle. Vary `variant` (0–4) and `rotate` per instance.
+- `<DecorRing size color opacity variant rotate strokeWidth style />` — faded oversized ring, absolutely positioned as hero/card decoration; pass offsets via `style` (`{ left: -70, top: -40 }`). Defaults: white, opacity .14, strokeWidth 2, variant 1. Don't hand-roll decorative Svg circles.
+- `<RingBadge size color centerBg variant rotate strokeWidth inset>{content}</RingBadge>` — sand ring around a solid center disc (count badges, list-row thumbs, chat header avatar). `inset` controls the ring→disc gap (default 9 on 48).
+- `<HeroIconButton size onPress>{icon}</HeroIconButton>` — translucent round icon button for petrol heroes (back/share). Default 38, use 36 on compact headers.
 - `<LiveMap markers dim showUser interactive onMarkerPress>{overlays}</LiveMap>` — REAL map (react-native-maps native / MapLibre web), palette-styled, geo-anchored sand-ring markers from `src/data/beaches.ts`. Use for all map screens.
 - `<MapCanvas dim>{markers}</MapCanvas>` — absolute-fill stylized SVG map. Only for small illustrations (onboarding 6b).
 - `<MapMarker state="live|missing|tournament|neutral" size count="3/4" label="חסר 1" variant rotate style />` — sand-ring map marker (live has pulse).

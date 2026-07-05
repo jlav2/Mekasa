@@ -3,7 +3,7 @@ import { View, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { Screen, Txt, Button, AvatarStack } from '../src/components';
+import { Screen, Txt, Button, AvatarStack, DecorRing } from '../src/components';
 import { colors, fonts } from '../src/theme';
 
 export default function LinkLanding() {
@@ -50,9 +50,7 @@ export default function LinkLanding() {
 
         {/* circle card */}
         <View style={styles.circleCard}>
-          <Svg width={160} height={160} viewBox="0 0 64 64" style={{ position: 'absolute', left: -44, top: -30, opacity: 0.14 }}>
-            <Circle cx={32} cy={32} r={26} fill="none" stroke="#fff" strokeWidth={2} strokeDasharray="48 8 40 10" strokeLinecap="round" />
-          </Svg>
+          <DecorRing size={160} style={{ left: -44, top: -30 }} />
           <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
             <View style={styles.missingBadge}>
               <Txt style={{ fontSize: 11, fontFamily: fonts.extrabold, color: '#fff' }}>חסרים 3</Txt>

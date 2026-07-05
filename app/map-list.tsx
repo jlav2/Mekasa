@@ -1,6 +1,6 @@
 import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LiveMap, Txt, Chip, Icon, SandRing, TabBar } from '../src/components';
+import { LiveMap, Txt, Chip, Icon, RingBadge, TabBar } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 
 type Circle = {
@@ -69,15 +69,13 @@ const CIRCLES: Circle[] = [
 function RingThumb({ circle }: { circle: Circle }) {
   const color = circle.state === 'live' ? colors.live : circle.state === 'missing' ? colors.sunset : colors.petrol;
   return (
-    <SandRing size={46} color={color} strokeWidth={4} variant={circle.variant} rotate={circle.rotate}>
-      <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>
-        {circle.state === 'tournament' ? (
-          <Icon name="flag" size={16} color={colors.sandGlow} />
-        ) : (
-          <Txt style={{ fontFamily: fonts.extrabold, fontSize: 13, color: '#fff' }}>{circle.count}</Txt>
-        )}
-      </View>
-    </SandRing>
+    <RingBadge size={46} color={color} inset={6} variant={circle.variant} rotate={circle.rotate}>
+      {circle.state === 'tournament' ? (
+        <Icon name="flag" size={16} color={colors.sandGlow} />
+      ) : (
+        <Txt style={{ fontFamily: fonts.extrabold, fontSize: 13, color: '#fff' }}>{circle.count}</Txt>
+      )}
+    </RingBadge>
   );
 }
 

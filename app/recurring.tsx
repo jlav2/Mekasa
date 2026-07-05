@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path, Line } from 'react-native-svg';
-import { Screen, Txt, SegmentedControl, AvatarStack, TabBar, ProBadge } from '../src/components';
+import { Screen, Txt, SegmentedControl, AvatarStack, TabBar, ProBadge, DecorRing, RingBadge } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 
 export default function Recurring() {
@@ -26,9 +26,7 @@ export default function Recurring() {
       <View style={{ gap: 10, marginTop: 16 }}>
         {/* active recurring hero */}
         <View style={styles.hero}>
-          <Svg width={190} height={190} viewBox="0 0 64 64" style={styles.heroDeco}>
-            <Circle cx={32} cy={32} r={26} fill="none" stroke="#fff" strokeWidth={2} strokeDasharray="48 8 40 10 42 7" strokeLinecap="round" />
-          </Svg>
+          <DecorRing size={190} style={{ left: -55, top: -40 }} />
           <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
             <View style={styles.timePill}>
               <Svg width={12} height={12} viewBox="0 0 24 24">
@@ -75,30 +73,16 @@ export default function Recurring() {
 
         {/* active recurring row 2 */}
         <View style={styles.row}>
-          <View style={{ width: 48, height: 48 }}>
-            <Svg width={48} height={48} viewBox="0 0 64 64" style={{ position: 'absolute' }}>
-              <Circle
-                cx={32}
-                cy={32}
-                r={26}
-                fill="none"
-                stroke={colors.live}
-                strokeWidth={4}
-                strokeDasharray="52 7 38 9 44 6"
-                strokeLinecap="round"
-              />
+          <RingBadge size={48} color={colors.live} variant={0} rotate={0}>
+            <Svg width={18} height={18} viewBox="0 0 32 32">
+              <Circle cx={16} cy={16} r={11} fill="none" stroke="#fff" strokeWidth={2} strokeDasharray="8 5" strokeLinecap="round" />
+              <Circle cx={16} cy={8} r={2} fill="#fff" />
+              <Circle cx={23.5} cy={13.5} r={2} fill="#fff" />
+              <Circle cx={20.5} cy={22.5} r={2} fill="#fff" />
+              <Circle cx={11.5} cy={22.5} r={2} fill="#fff" />
+              <Circle cx={8.5} cy={13.5} r={2} fill="#fff" />
             </Svg>
-            <View style={styles.recurIconWrap}>
-              <Svg width={18} height={18} viewBox="0 0 32 32">
-                <Circle cx={16} cy={16} r={11} fill="none" stroke="#fff" strokeWidth={2} strokeDasharray="8 5" strokeLinecap="round" />
-                <Circle cx={16} cy={8} r={2} fill="#fff" />
-                <Circle cx={23.5} cy={13.5} r={2} fill="#fff" />
-                <Circle cx={20.5} cy={22.5} r={2} fill="#fff" />
-                <Circle cx={11.5} cy={22.5} r={2} fill="#fff" />
-                <Circle cx={8.5} cy={13.5} r={2} fill="#fff" />
-              </Svg>
-            </View>
-          </View>
+          </RingBadge>
           <View style={{ flex: 1 }}>
             <Txt style={styles.rowTitle}>שישי בוקר · אלטינה בגורדון</Txt>
             <Txt style={styles.rowMeta}>כל שישי 8:00 · 7 קבועים · אתה משתתף</Txt>
@@ -152,7 +136,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.petrolHero,
   },
-  heroDeco: { position: 'absolute', left: -55, top: -40, opacity: 0.14 },
   timePill: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
@@ -175,17 +158,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 14,
     paddingHorizontal: 16,
-  },
-  recurIconWrap: {
-    position: 'absolute',
-    top: 9,
-    left: 9,
-    right: 9,
-    bottom: 9,
-    borderRadius: 15,
-    backgroundColor: colors.live,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   pausedIconWrap: {
     width: 48,

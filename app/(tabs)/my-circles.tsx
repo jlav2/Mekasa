@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Circle, Path } from 'react-native-svg';
 import {
   Screen,
   Txt,
@@ -13,7 +12,8 @@ import {
   StatusDot,
   Avatar,
   AvatarStack,
-  SandRing,
+  DecorRing,
+  RingBadge,
   Icon,
   } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
@@ -47,7 +47,7 @@ export default function MyCircles() {
         <View style={{ gap: 10, marginTop: 16 }}>
           {/* live now */}
           <Card petrol floating style={{ overflow: 'hidden' }}>
-            <SandRing size={190} color="#fff" strokeWidth={2} variant={1} rotate={0} style={{ position: 'absolute', left: -55, top: -40, opacity: 0.14 }} />
+            <DecorRing size={190} style={{ left: -55, top: -40 }} />
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
               <View style={styles.liveBadge}>
                 <StatusDot color="#fff" size={7} />
@@ -131,12 +131,9 @@ export default function MyCircles() {
 function UpcomingRow({ ringColor, ringRotate, center, centerBg, title, meta, badge, onPress }: any) {
   return (
     <Card floating={false} pad={14} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12 }}>
-      <View style={{ width: 48, height: 48 }}>
-        <SandRing size={48} color={ringColor} strokeWidth={4} variant={2} rotate={ringRotate} />
-        <View style={{ position: 'absolute', top: 9, left: 9, right: 9, bottom: 9, borderRadius: 24, backgroundColor: centerBg, alignItems: 'center', justifyContent: 'center' }}>
-          {center}
-        </View>
-      </View>
+      <RingBadge size={48} color={ringColor} centerBg={centerBg} variant={2} rotate={ringRotate}>
+        {center}
+      </RingBadge>
       <View style={{ flex: 1 }}>
         <Txt style={{ fontSize: 14.5, fontFamily: fonts.bold, color: colors.ink }}>{title}</Txt>
         <Txt style={{ fontSize: 12.5, color: colors.muted, marginTop: 2, fontFamily: fonts.medium }}>{meta}</Txt>

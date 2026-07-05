@@ -2,7 +2,7 @@ import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { Txt, Icon } from '../src/components';
+import { Txt, Icon, RingBadge } from '../src/components';
 import { colors, fonts } from '../src/theme';
 
 type Msg = {
@@ -56,23 +56,9 @@ const QUICK_REPLIES = ['בדרך 🏃', 'מביא כדור', "עוד 10 דק'"];
 
 function RingAvatar() {
   return (
-    <View style={{ width: 44, height: 44 }}>
-      <Svg width={44} height={44} viewBox="0 0 64 64" style={StyleSheet.absoluteFill}>
-        <Circle
-          cx={32}
-          cy={32}
-          r={28}
-          fill="none"
-          stroke={colors.live}
-          strokeWidth={3.5}
-          strokeDasharray="52 7 38 9 44 6"
-          strokeLinecap="round"
-        />
-      </Svg>
-      <View style={styles.ringAvatarInner}>
-        <Txt style={{ fontFamily: fonts.bold, fontSize: 11, color: '#fff' }}>4/4</Txt>
-      </View>
-    </View>
+    <RingBadge size={44} color={colors.live} variant={0} strokeWidth={3.5} inset={6} rotate={0}>
+      <Txt style={{ fontFamily: fonts.bold, fontSize: 11, color: '#fff' }}>4/4</Txt>
+    </RingBadge>
   );
 }
 
@@ -212,17 +198,6 @@ const styles = StyleSheet.create({
   },
   appBarRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, height: 72, paddingHorizontal: 8 },
   iconBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  ringAvatarInner: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    right: 6,
-    bottom: 6,
-    borderRadius: 999,
-    backgroundColor: colors.sunset,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   appBarTitle: { fontFamily: fonts.semibold, fontSize: 16, color: colors.ink },
   appBarSubRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 2 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.live },

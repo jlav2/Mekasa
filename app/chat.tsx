@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Txt, Icon } from '../src/components';
+import { Txt, Icon, DecorRing, RingBadge, HeroIconButton } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 import type { ChatMessage } from '../src/data/models';
@@ -36,23 +36,9 @@ const QUICK_REPLIES = ['בדרך 🏃', 'מביא כדור', "עוד 10 דק'"];
 
 function RingAvatar({ count }: { count: string }) {
   return (
-    <View style={{ width: 46, height: 46 }}>
-      <Svg width={46} height={46} viewBox="0 0 64 64" style={StyleSheet.absoluteFill}>
-        <Circle
-          cx={32}
-          cy={32}
-          r={28}
-          fill="none"
-          stroke={colors.live}
-          strokeWidth={3.5}
-          strokeDasharray="52 7 38 9 44 6"
-          strokeLinecap="round"
-        />
-      </Svg>
-      <View style={styles.ringAvatarInner}>
-        <Txt style={{ fontFamily: fonts.extrabold, fontSize: 12, color: '#fff' }}>{count}</Txt>
-      </View>
-    </View>
+    <RingBadge size={46} color={colors.live} variant={0} strokeWidth={3.5} inset={6}>
+      <Txt style={{ fontFamily: fonts.extrabold, fontSize: 12, color: '#fff' }}>{count}</Txt>
+    </RingBadge>
   );
 }
 
@@ -128,22 +114,11 @@ export default function Chat() {
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
       {/* header */}
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-        <Svg width={170} height={170} viewBox="0 0 64 64" style={styles.headerDeco}>
-          <Circle
-            cx={32}
-            cy={32}
-            r={26}
-            fill="none"
-            stroke="#fff"
-            strokeWidth={2}
-            strokeDasharray="48 8 40 10 42 7"
-            strokeLinecap="round"
-          />
-        </Svg>
+        <DecorRing size={170} opacity={0.13} style={{ left: -50, top: -30 }} />
         <View style={styles.headerRow}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <HeroIconButton size={36} onPress={() => router.back()}>
             <Icon name="chevronRight" size={20} color="#fff" strokeWidth={2.4} />
-          </Pressable>
+          </HeroIconButton>
           <RingAvatar count={`${circle.players.length}/${circle.capacity}`} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Txt style={styles.headerTitle} numberOfLines={1}>
@@ -219,27 +194,7 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     overflow: 'hidden',
   },
-  headerDeco: { position: 'absolute', left: -50, top: -30, opacity: 0.13 },
   headerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringAvatarInner: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    right: 6,
-    bottom: 6,
-    borderRadius: 999,
-    backgroundColor: colors.sunset,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerTitle: { fontFamily: fonts.extrabold, fontSize: 16.5, color: '#fff' },
   headerSubRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 2 },
   liveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.live },

@@ -1,7 +1,7 @@
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Screen, Txt, Button, Icon, WhatsappGlyph } from '../src/components';
+import { Screen, Txt, Button, Icon, WhatsappGlyph, DecorRing } from '../src/components';
 import { colors, fonts } from '../src/theme';
 
 export default function CircleShare() {
@@ -53,18 +53,7 @@ export default function CircleShare() {
           </Txt>
           <View style={styles.previewCard}>
             <View style={styles.previewHeader}>
-              <Svg width={130} height={130} viewBox="0 0 64 64" style={{ position: 'absolute', left: -36, top: -24, opacity: 0.15 }}>
-                <Circle
-                  cx={32}
-                  cy={32}
-                  r={26}
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth={2}
-                  strokeDasharray="48 8 40 10"
-                  strokeLinecap="round"
-                />
-              </Svg>
+              <DecorRing size={130} opacity={0.15} style={{ left: -36, top: -24 }} />
               <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
                 <View style={styles.missingBadge}>
                   <Txt style={{ fontSize: 10.5, fontFamily: fonts.extrabold, color: '#fff' }}>חסרים 3</Txt>

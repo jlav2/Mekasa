@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
-import { Screen, Txt, Icon } from '../src/components';
+import { Screen, Txt, Icon, DecorRing } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 
 type Court = { label: string; sub: string; state: 'taken' | 'selected' | 'note' };
@@ -44,23 +44,7 @@ export default function BeachPicker() {
 
         {/* selected beach */}
         <View style={styles.selectedCard}>
-          <Svg
-            width={140}
-            height={140}
-            viewBox="0 0 64 64"
-            style={{ position: 'absolute', left: -40, top: -26, opacity: 0.14 }}
-          >
-            <SvgCircle
-              cx={32}
-              cy={32}
-              r={26}
-              fill="none"
-              stroke="#fff"
-              strokeWidth={2}
-              strokeDasharray="48 8 40 10"
-              strokeLinecap="round"
-            />
-          </Svg>
+          <DecorRing size={140} style={{ left: -40, top: -26 }} />
           <View style={styles.selectedTopRow}>
             <View style={{ flex: 1 }}>
               <Txt style={styles.selectedTitle}>חוף פרישמן</Txt>

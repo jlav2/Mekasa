@@ -63,6 +63,75 @@ export function SandRing({
   );
 }
 
+// Faded oversized ring, absolutely positioned as hero/card decoration.
+// Callers pass position offsets via `style` ({ left: -70, top: -40 }).
+export function DecorRing({
+  size = 240,
+  color = '#fff',
+  opacity = 0.14,
+  variant = 1,
+  rotate = 0,
+  strokeWidth = 2,
+  style,
+}: {
+  size?: number;
+  color?: string;
+  opacity?: number;
+  variant?: number;
+  rotate?: number;
+  strokeWidth?: number;
+  style?: any;
+}) {
+  return (
+    <SandRing
+      size={size}
+      color={color}
+      strokeWidth={strokeWidth}
+      variant={variant}
+      rotate={rotate}
+      style={[{ position: 'absolute', opacity }, style]}
+    />
+  );
+}
+
+// Sand ring around a solid center disc — the count/glyph badge used in
+// notifications, list rows and chat headers.
+export function RingBadge({
+  size = 48,
+  color = colors.sunset,
+  centerBg,
+  variant = 1,
+  rotate = 0,
+  strokeWidth = 4,
+  inset = 9,
+  style,
+  children,
+}: {
+  size?: number;
+  color?: string;
+  centerBg?: string;
+  variant?: number;
+  rotate?: number;
+  strokeWidth?: number;
+  inset?: number;
+  style?: any;
+  children?: ReactNode;
+}) {
+  const inner = size - inset * 2;
+  return (
+    <SandRing size={size} color={color} strokeWidth={strokeWidth} variant={variant} rotate={rotate} style={style}>
+      <View
+        style={[
+          styles.center,
+          { width: inner, height: inner, borderRadius: inner / 2, backgroundColor: centerBg ?? color },
+        ]}
+      >
+        {children}
+      </View>
+    </SandRing>
+  );
+}
+
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
 });

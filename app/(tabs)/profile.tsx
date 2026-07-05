@@ -1,7 +1,7 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Screen, Txt, SandRing, ProBadge, Icon } from '../../src/components';
+import { Screen, Txt, SandRing, ProBadge, Icon, DecorRing } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
 
 type Sport = {
@@ -127,9 +127,7 @@ export default function Profile() {
 
       {/* pro banner */}
       <Pressable onPress={() => router.push('/paywall')} style={styles.proBanner}>
-        <Svg width={120} height={120} viewBox="0 0 64 64" style={styles.proBannerDeco}>
-          <Circle cx={32} cy={32} r={26} fill="none" stroke={colors.sandGlow} strokeWidth={2.5} strokeDasharray="48 8 40 10" strokeLinecap="round" />
-        </Svg>
+        <DecorRing size={120} color={colors.sandGlow} opacity={0.16} strokeWidth={2.5} style={{ left: -30, top: -20 }} />
         <View style={{ flex: 1 }}>
           <Txt style={{ fontSize: 15, fontFamily: fonts.extrabold, color: '#fff' }}>MeKasa Pro פעיל</Txt>
           <Txt style={{ fontSize: 12, color: 'rgba(255,255,255,.65)', marginTop: 2 }}>מתחדש ב־12.8.26 · נהל מנוי</Txt>
@@ -189,5 +187,4 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.petrolHero,
   },
-  proBannerDeco: { position: 'absolute', left: -30, top: -20, opacity: 0.16 },
 });

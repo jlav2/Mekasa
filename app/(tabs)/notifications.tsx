@@ -2,41 +2,9 @@ import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Txt, Icon, SectionLabel } from '../../src/components';
+import { Txt, Icon, SectionLabel, DecorRing, RingBadge } from '../../src/components';
 import { colors, fonts } from '../../src/theme';
 import { useStore } from '../../src/store';
-
-function RingBadge({
-  size = 48,
-  color,
-  dash,
-  rotate,
-  children,
-}: {
-  size?: number;
-  color: string;
-  dash: string;
-  rotate: number;
-  children?: React.ReactNode;
-}) {
-  return (
-    <View style={{ width: size, height: size, flexShrink: 0 }}>
-      <Svg width={size} height={size} viewBox="0 0 64 64" style={StyleSheet.absoluteFill}>
-        <Circle
-          cx={32}
-          cy={32}
-          r={26}
-          fill="none"
-          stroke={color}
-          strokeWidth={4}
-          strokeDasharray={dash}
-          strokeLinecap="round"
-        />
-      </Svg>
-      <View style={styles.ringBadgeInner}>{children}</View>
-    </View>
-  );
-}
 
 export default function Notifications() {
   const insets = useSafeAreaInsets();
@@ -68,7 +36,7 @@ export default function Notifications() {
         <View style={styles.hotCard}>
           <View style={styles.hotLiveDot} />
           <View style={styles.rowTop}>
-            <RingBadge size={48} color={colors.sunset} dash="48 8 40 10 42 7" rotate={40}>
+            <RingBadge size={48} color={colors.sunset} variant={1} rotate={40}>
               <Txt style={{ fontFamily: fonts.extrabold, fontSize: 11, color: '#fff' }}>3/4</Txt>
             </RingBadge>
             <View style={{ flex: 1 }}>
@@ -108,12 +76,10 @@ export default function Notifications() {
 
         {/* tournament reminder */}
         <Pressable style={styles.plainCard} onPress={() => router.push('/tournament')}>
-          <RingBadge size={48} color={colors.petrol} dash="60 9 50 8" rotate={-70}>
-            <View style={styles.trophyCircle}>
-              <Svg width={14} height={14} viewBox="0 0 20 20">
-                <Path d="M5 2v16M5 3h10l-3 3.5L15 10H5" fill="none" stroke={colors.sandGlow} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-              </Svg>
-            </View>
+          <RingBadge size={48} color={colors.petrol} variant={2} rotate={-70}>
+            <Svg width={14} height={14} viewBox="0 0 20 20">
+              <Path d="M5 2v16M5 3h10l-3 3.5L15 10H5" fill="none" stroke={colors.sandGlow} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
           </RingBadge>
           <View style={{ flex: 1 }}>
             <Txt style={styles.rowTitle}>תזכורת: טורניר הילטון מחר ב־9:00</Txt>
@@ -138,9 +104,7 @@ export default function Notifications() {
 
         {/* pro upsell */}
         <View style={styles.proCard}>
-          <Svg width={110} height={110} viewBox="0 0 64 64" style={styles.proDeco}>
-            <Circle cx="32" cy="32" r="26" fill="none" stroke={colors.sandGlow} strokeWidth={2.5} strokeDasharray="48 8 40 10" strokeLinecap="round" />
-          </Svg>
+          <DecorRing size={110} color={colors.sandGlow} opacity={0.15} strokeWidth={2.5} style={{ left: -30, top: -20 }} />
           <View style={{ flex: 1 }}>
             <Txt style={styles.proTitle}>רוצה לדעת ראשון על כל מעגל בפרישמן?</Txt>
             <Txt style={styles.proSub}>התראות חכמות לחופים שלך — עם Pro</Txt>
@@ -165,28 +129,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  ringBadgeInner: {
-    position: 'absolute',
-    top: 9,
-    left: 9,
-    right: 9,
-    bottom: 9,
-    borderRadius: 999,
-    backgroundColor: colors.sunset,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trophyCircle: {
-    position: 'absolute',
-    top: 9,
-    left: 9,
-    right: 9,
-    bottom: 9,
-    borderRadius: 999,
-    backgroundColor: colors.petrol,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   hotCard: {
     backgroundColor: colors.card,
@@ -275,7 +217,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  proDeco: { position: 'absolute', left: -30, top: -20, opacity: 0.15 },
   proTitle: { fontFamily: fonts.extrabold, fontSize: 13.5, color: '#fff' },
   proSub: { fontFamily: fonts.body, fontSize: 12, color: 'rgba(255,255,255,.65)', marginTop: 2 },
   proCta: {

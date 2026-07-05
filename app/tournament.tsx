@@ -2,16 +2,8 @@ import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
-import { Screen, Txt, Icon, AvatarStack } from '../src/components';
+import { Screen, Txt, Icon, AvatarStack, DecorRing, HeroIconButton } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
-
-function RingDecor({ size, color, opacity, style, dash }: { size: number; color: string; opacity: number; style: any; dash: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" style={[{ position: 'absolute', opacity }, style]}>
-      <Circle cx={32} cy={32} r={26} fill="none" stroke={color} strokeWidth={2} strokeDasharray={dash} strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 function DetailRow({ icon, text, border = true }: { icon: React.ReactNode; text: string; border?: boolean }) {
   return (
@@ -33,14 +25,14 @@ export default function Tournament() {
       <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
       {/* hero */}
       <View style={[styles.hero, { paddingTop: insets.top + 20 }]}>
-        <RingDecor size={250} color={colors.sandGlow} opacity={0.13} dash="60 9 50 8" style={{ left: -70, top: -50 }} />
+        <DecorRing size={250} color={colors.sandGlow} opacity={0.13} variant={2} style={{ left: -70, top: -50 }} />
         <View style={styles.heroTopRow}>
-          <Pressable onPress={() => router.back()} style={styles.iconBtn}>
+          <HeroIconButton size={36} onPress={() => router.back()}>
             <Icon name="chevronRight" size={17} color="#fff" strokeWidth={2.4} />
-          </Pressable>
-          <Pressable style={styles.iconBtn}>
+          </HeroIconButton>
+          <HeroIconButton size={36}>
             <Icon name="share" size={16} color="#fff" strokeWidth={1.7} />
-          </Pressable>
+          </HeroIconButton>
         </View>
 
         <View style={styles.badgeRow}>
@@ -144,14 +136,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   badgeRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginTop: 14 },
   tourneyBadge: {
     flexDirection: 'row-reverse',

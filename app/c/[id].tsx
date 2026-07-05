@@ -1,41 +1,11 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
-import { Screen, Txt, Icon, SandRing, StatusDot, Button } from '../../src/components';
+import { Screen, Txt, Icon, SandRing, DecorRing, HeroIconButton, StatusDot, Button } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
 import { useStore } from '../../src/store';
 
 const RING_ROTATIONS = [0, 60, 150, 230];
-
-function HeroRingDecor() {
-  return (
-    <Svg
-      width={240}
-      height={240}
-      viewBox="0 0 64 64"
-      style={{ position: 'absolute', left: -70, top: -40, opacity: 0.14 }}
-    >
-      <SvgCircle
-        cx={32}
-        cy={32}
-        r={26}
-        fill="none"
-        stroke="#fff"
-        strokeWidth={2}
-        strokeDasharray="48 8 40 10 42 7"
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function PillButton({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={styles.pillBtn}>
-      {children}
-    </Pressable>
-  );
-}
 
 function InfoRow({
   icon,
@@ -107,14 +77,14 @@ export default function CircleDetail() {
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }}>
       {/* hero */}
       <View style={styles.hero}>
-        <HeroRingDecor />
+        <DecorRing style={{ left: -70, top: -40 }} />
         <View style={styles.heroTopRow}>
-          <PillButton onPress={() => router.back()}>
+          <HeroIconButton onPress={() => router.back()}>
             <Icon name="chevronRight" size={17} color="#fff" strokeWidth={2.4} />
-          </PillButton>
-          <PillButton onPress={() => router.push('/circle-share')}>
+          </HeroIconButton>
+          <HeroIconButton onPress={() => router.push('/circle-share')}>
             <Icon name="share" size={16} color="#fff" strokeWidth={1.8} />
-          </PillButton>
+          </HeroIconButton>
         </View>
 
         <View style={styles.badgeRow}>
@@ -241,14 +211,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroTopRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-  pillBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   badgeRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginTop: 16 },
   stateBadge: {
     flexDirection: 'row-reverse',

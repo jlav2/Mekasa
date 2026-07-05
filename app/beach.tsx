@@ -1,17 +1,8 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import Svg, { Circle } from 'react-native-svg';
-import { Screen, Txt, Icon, SandRing } from '../src/components';
+import { Screen, Txt, Icon, RingBadge, DecorRing } from '../src/components';
 import { colors, fonts, shadows, beachHeroGradient } from '../src/theme';
-
-function RingDecor({ size, color, opacity, style, dash }: { size: number; color: string; opacity: number; style: any; dash: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" style={[{ position: 'absolute', opacity }, style]}>
-      <Circle cx={32} cy={32} r={26} fill="none" stroke={color} strokeWidth={2} strokeDasharray={dash} strokeLinecap="round" />
-    </Svg>
-  );
-}
 
 function LiveCircleRow({
   count,
@@ -38,11 +29,9 @@ function LiveCircleRow({
     <View style={[styles.liveRow, border && styles.rowBorder]}>
       <View style={styles.ringWrap}>
         {pulse && <View style={styles.pulseHalo} />}
-        <SandRing size={44} color={color} strokeWidth={4} rotate={rotate} variant={2}>
-          <View style={[styles.ringCenter, { backgroundColor: color }]}>
-            <Txt style={styles.ringCenterTxt}>{count}</Txt>
-          </View>
-        </SandRing>
+        <RingBadge size={44} color={color} inset={9} rotate={rotate} variant={2}>
+          <Txt style={styles.ringCenterTxt}>{count}</Txt>
+        </RingBadge>
       </View>
       <View style={{ flex: 1 }}>
         <Txt style={styles.liveTitle}>{title}</Txt>
@@ -83,7 +72,7 @@ export default function Beach() {
         end={{ x: 0.7, y: 1 }}
         style={styles.hero}
       >
-        <RingDecor size={230} color="#fff" opacity={0.13} dash="48 8 40 10 42 7" style={{ left: -64, top: -46 }} />
+        <DecorRing size={230} opacity={0.13} style={{ left: -64, top: -46 }} />
         <View style={styles.heroTopRow}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Icon name="chevronRight" size={17} color="#fff" strokeWidth={2.4} />
@@ -117,7 +106,7 @@ export default function Beach() {
       <View style={styles.body}>
         {/* tournament banner */}
         <Pressable onPress={() => router.push('/tournament')} style={styles.tourneyBanner}>
-          <RingDecor size={100} color={colors.sandGlow} opacity={0.15} dash="48 8 40 10" style={{ left: -26, top: -16 }} />
+          <DecorRing size={100} color={colors.sandGlow} opacity={0.15} style={{ left: -26, top: -16 }} />
           <View style={styles.tourneyIconWrap}>
             <Icon name="flag" size={16} color={colors.sandGlow} strokeWidth={2} />
           </View>
@@ -262,7 +251,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: 'rgba(255,107,44,.35)',
   },
-  ringCenter: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   ringCenterTxt: { fontFamily: fonts.extrabold, fontSize: 10.5, color: '#fff' },
   liveTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   liveMeta: { fontFamily: fonts.medium, fontSize: 12, color: colors.faint, marginTop: 1 },

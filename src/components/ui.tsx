@@ -372,6 +372,38 @@ export function Row({ children, style, gap = 12, onPress }: { children: ReactNod
   return onPress ? <Pressable onPress={onPress}>{content}</Pressable> : content;
 }
 
+/* ---------------- HeroIconButton (translucent round button on petrol heroes) ---------------- */
+export function HeroIconButton({
+  size = 38,
+  onPress,
+  style,
+  children,
+}: {
+  size?: number;
+  onPress?: () => void;
+  style?: ViewStyle;
+  children: ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: 'rgba(255,255,255,.14)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        style,
+      ]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   badge: { paddingHorizontal: 11, paddingVertical: 4, borderRadius: 11, alignSelf: 'flex-start' },
   chip: {
