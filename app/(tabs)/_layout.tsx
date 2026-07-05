@@ -1,6 +1,7 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { Txt, Icon } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
@@ -73,14 +74,21 @@ function PillTabBar({ state, navigation }: PillTabBarProps) {
                 }
               }}
             >
-              <View>
+              <Animated.View
+                style={{
+                  transform: [{ scale: isActive ? 1.12 : 1 }, { translateY: isActive ? -1 : 0 }],
+                  transitionProperty: 'transform',
+                  transitionDuration: 180,
+                  transitionTimingFunction: 'ease-out',
+                }}
+              >
                 <TabIcon icon={meta.icon} active={isActive} />
                 {badge > 0 ? (
-                  <View style={styles.badge}>
+                  <Animated.View entering={ZoomIn.duration(200)} exiting={ZoomOut.duration(150)} style={styles.badge}>
                     <Txt style={{ color: '#fff', fontSize: 9.5, fontFamily: fonts.extrabold }}>{badge}</Txt>
-                  </View>
+                  </Animated.View>
                 ) : null}
-              </View>
+              </Animated.View>
               <Txt
                 style={{
                   fontSize: 10.5,

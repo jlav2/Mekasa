@@ -1,7 +1,14 @@
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { useMemo } from 'react';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { LiveMap, Txt, Chip, Icon, RingBadge, TabBar } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
+
+// Sheet snap positions as fractions of window height
+const EXPANDED_TOP = 0.15;
+const DEFAULT_TOP = 0.5;
 
 type Circle = {
   id: string;
@@ -101,6 +108,40 @@ function CircleRow({ circle, last, onPress }: { circle: Circle; last?: boolean; 
 
 export default function MapList() {
   const router = useRouter();
+  const { height: winH } = useWindowDimensions();
+
+  // 0 = expanded, restOffset = default half-screen position
+  const restOffset = (DEFAULT_TOP - EXPANDED_TOP) * winH;
+  const translateY = useSharedValue(restOffset);
+  const startY = useSharedValue(0);
+
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY([-10, 10])
+        .onBegin(() => {
+          startY.value = translateY.value;
+        })
+        .onUpdate((e) => {
+          translateY.value = Math.min(Math.max(startY.value + e.translationY, 0), restOffset);
+        })
+        .onEnd((e) => {
+          const target =
+            e.velocityY < -500
+              ? 0
+              : e.velocityY > 500
+                ? restOffset
+                : translateY.value < restOffset / 2
+                  ? 0
+                  : restOffset;
+          translateY.value = withSpring(target, { velocity: e.velocityY, damping: 18, stiffness: 180 });
+        }),
+    [restOffset],
+  );
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
@@ -120,19 +161,23 @@ export default function MapList() {
         </LiveMap>
       </View>
 
-      {/* bottom sheet */}
-      <View style={styles.sheet}>
-        <View style={styles.dragHandle} />
-        <View style={styles.sheetHeader}>
-          <Txt style={styles.sheetTitle}>5 מעגלים סביבך</Txt>
-          <Txt style={styles.sheetSub}>ת&quot;א · יפו</Txt>
-        </View>
+      {/* bottom sheet — drag the header up/down to expand/collapse */}
+      <Animated.View style={[styles.sheet, { top: EXPANDED_TOP * winH }, sheetStyle]}>
+        <GestureDetector gesture={pan} touchAction="none">
+          <View style={styles.grabZone}>
+            <View style={styles.dragHandle} />
+            <View style={styles.sheetHeader}>
+              <Txt style={styles.sheetTitle}>5 מעגלים סביבך</Txt>
+              <Txt style={styles.sheetSub}>ת&quot;א · יפו</Txt>
+            </View>
+          </View>
+        </GestureDetector>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
           {CIRCLES.map((c, i) => (
             <CircleRow key={c.id} circle={c} last={i === CIRCLES.length - 1} onPress={() => router.push(c.route as any)} />
           ))}
         </ScrollView>
-      </View>
+      </Animated.View>
 
       <TabBar active="map" />
     </View>
@@ -154,15 +199,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: '50%',
     bottom: 0,
     backgroundColor: colors.card,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 18,
-    paddingTop: 10,
     ...shadows.floatMap,
   },
+  grabZone: { paddingTop: 10, paddingBottom: 4 },
   dragHandle: {
     width: 42,
     height: 5,

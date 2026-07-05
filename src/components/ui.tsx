@@ -1,13 +1,12 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   View,
   Pressable,
   StyleSheet,
-  Animated,
-  Easing,
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt } from './Txt';
 import { Icon } from './icons';
@@ -236,39 +235,56 @@ export function AvatarStack({
 }
 
 /* ---------------- Animated status dot (liveDot) ---------------- */
+// Reanimated CSS animation — declarative, runs off the JS thread, cleans up on unmount.
+const dotPulse = {
+  '0%': { opacity: 1 },
+  '50%': { opacity: 0.35 },
+  '100%': { opacity: 1 },
+};
+
 export function StatusDot({ color = colors.live, size = 8, animate = true }: { color?: string; size?: number; animate?: boolean }) {
-  const op = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    if (!animate) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(op, { toValue: 0.35, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(op, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [animate]);
-  return <Animated.View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color, opacity: animate ? op : 1 }} />;
+  return (
+    <Animated.View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        ...(animate
+          ? {
+              animationName: dotPulse,
+              animationDuration: '1600ms',
+              animationIterationCount: 'infinite',
+              animationTimingFunction: 'ease-in-out',
+            }
+          : null),
+      }}
+    />
+  );
 }
 
 /* ---------------- Pulse halo (mkPulse) behind a live marker ---------------- */
+const haloPulse = {
+  '0%': { transform: [{ scale: 0.85 }], opacity: 0.75 },
+  '100%': { transform: [{ scale: 1.7 }], opacity: 0 },
+};
+
 export function PulseHalo({ color = colors.live, size = 44, style }: { color?: string; size?: number; style?: ViewStyle }) {
-  const v = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(v, { toValue: 1, duration: 2000, easing: Easing.out(Easing.ease), useNativeDriver: true })
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-  const scale = v.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.7] });
-  const opacity = v.interpolate({ inputRange: [0, 1], outputRange: [0.75, 0] });
   return (
     <Animated.View
       pointerEvents="none"
       style={[
-        { position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: color, transform: [{ scale }], opacity },
+        {
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          animationName: haloPulse,
+          animationDuration: '2000ms',
+          animationIterationCount: 'infinite',
+          animationTimingFunction: 'ease-out',
+        },
         style,
       ]}
     />
@@ -329,16 +345,32 @@ export function ProgressDashes({ total, active }: { total: number; active: numbe
 /* ---------------- Toggle (iOS switch) ---------------- */
 export function Toggle({ value, onChange, onColor = colors.live }: { value: boolean; onChange?: (v: boolean) => void; onColor?: string }) {
   const [on, setOn] = useState(value);
-  const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
-  useEffect(() => {
-    Animated.timing(anim, { toValue: on ? 1 : 0, duration: 180, useNativeDriver: false }).start();
-  }, [on]);
-  const tx = anim.interpolate({ inputRange: [0, 1], outputRange: [2, 23] });
-  const bg = anim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(14,79,94,.16)', onColor] });
   return (
     <Pressable onPress={() => { setOn(!on); onChange?.(!on); }}>
-      <Animated.View style={{ width: 52, height: 31, borderRadius: 16, backgroundColor: bg, justifyContent: 'center' }}>
-        <Animated.View style={{ width: 27, height: 27, borderRadius: 14, backgroundColor: '#fff', transform: [{ translateX: tx }], ...shadows.card }} />
+      <Animated.View
+        style={{
+          width: 52,
+          height: 31,
+          borderRadius: 16,
+          backgroundColor: on ? onColor : 'rgba(14,79,94,.16)',
+          justifyContent: 'center',
+          transitionProperty: 'backgroundColor',
+          transitionDuration: 180,
+        }}
+      >
+        <Animated.View
+          style={{
+            width: 27,
+            height: 27,
+            borderRadius: 14,
+            backgroundColor: '#fff',
+            transform: [{ translateX: on ? 23 : 2 }],
+            transitionProperty: 'transform',
+            transitionDuration: 180,
+            transitionTimingFunction: 'ease-out',
+            ...shadows.card,
+          }}
+        />
       </Animated.View>
     </Pressable>
   );

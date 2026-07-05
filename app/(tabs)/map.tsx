@@ -1,5 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
   LiveMap,
     Card,
@@ -78,7 +79,8 @@ export default function Map() {
       </LiveMap>
 
       {/* bottom floating card — nearest circle (live from store) */}
-      <Card floating radius={24} pad={16} style={styles.card}>
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.card}>
+      <Card floating radius={24} pad={16}>
         <View style={styles.statusRow}>
           <StatusDot color={joined ? colors.live : colors.sunset} size={9} />
           <Txt style={[styles.statusTxt, joined && { color: colors.liveDeep }]}>
@@ -110,6 +112,7 @@ export default function Map() {
           onPress={onJoin}
         />
       </Card>
+      </Animated.View>
 
     </View>
   );

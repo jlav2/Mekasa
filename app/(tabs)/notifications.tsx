@@ -1,4 +1,8 @@
-import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { useRef, ReactNode } from 'react';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { ZoomOut, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -6,11 +10,42 @@ import { Txt, Icon, SectionLabel, DecorRing, RingBadge } from '../../src/compone
 import { colors, fonts } from '../../src/theme';
 import { useStore } from '../../src/store';
 
+// Swipe-to-mark-read wrapper (RTL row: action panel revealed on the left edge).
+function SwipeToRead({ enabled, onRead, children }: { enabled: boolean; onRead: () => void; children: ReactNode }) {
+  const ref = useRef<SwipeableMethods>(null);
+  if (!enabled) return <>{children}</>;
+
+  const renderLeftActions = (progress: SharedValue<number>) => (
+    <Animated.View style={[styles.readAction, { opacity: progress }]}>
+      <Icon name="check" size={16} color="#fff" strokeWidth={2.6} />
+      <Txt style={styles.readActionTxt}>נקרא</Txt>
+    </Animated.View>
+  );
+
+  return (
+    <Swipeable
+      ref={ref}
+      renderLeftActions={renderLeftActions}
+      leftThreshold={64}
+      overshootFriction={8}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'left') {
+          onRead();
+          ref.current?.close();
+        }
+      }}
+    >
+      {children}
+    </Swipeable>
+  );
+}
+
 export default function Notifications() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const notifications = useStore((s) => s.notifications);
   const markAllRead = useStore((s) => s.markAllRead);
+  const markRead = useStore((s) => s.markRead);
   const joinCircle = useStore((s) => s.joinCircle);
   const unread = (id: string) => notifications.find((n) => n.id === id)?.unread;
 
@@ -60,17 +95,19 @@ export default function Notifications() {
           </View>
         </View>
 
-        {/* joined your circle */}
-        <View style={styles.plainCard}>
-          <View style={[styles.avatarCircle, { backgroundColor: colors.live }]}>
-            <Txt style={{ fontFamily: fonts.bold, fontSize: 17, color: '#fff' }}>ד</Txt>
+        {/* joined your circle — swipe to mark read */}
+        <SwipeToRead enabled={!!unread('n2')} onRead={() => markRead('n2')}>
+          <View style={styles.plainCard}>
+            <View style={[styles.avatarCircle, { backgroundColor: colors.live }]}>
+              <Txt style={{ fontFamily: fonts.bold, fontSize: 17, color: '#fff' }}>ד</Txt>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Txt style={styles.rowTitle}>דניאל הצטרף למעגל שלך</Txt>
+              <Txt style={styles.rowMeta}>אלטינה · חוף גורדון · לפני 18 דק'</Txt>
+            </View>
+            {unread('n2') && <Animated.View exiting={ZoomOut.duration(200)} style={styles.unreadDot} />}
           </View>
-          <View style={{ flex: 1 }}>
-            <Txt style={styles.rowTitle}>דניאל הצטרף למעגל שלך</Txt>
-            <Txt style={styles.rowMeta}>אלטינה · חוף גורדון · לפני 18 דק'</Txt>
-          </View>
-          {unread('n2') && <View style={styles.unreadDot} />}
-        </View>
+        </SwipeToRead>
 
         <SectionLabel style={{ marginTop: 6 }}>היום</SectionLabel>
 
@@ -195,6 +232,16 @@ const styles = StyleSheet.create({
   rowTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   rowMeta: { fontFamily: fonts.body, fontSize: 12.5, color: colors.muted, marginTop: 2 },
   unreadDot: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: colors.live, flexShrink: 0 },
+  readAction: {
+    backgroundColor: colors.live,
+    borderRadius: 20,
+    marginRight: 8,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  readActionTxt: { fontFamily: fonts.extrabold, fontSize: 12, color: '#fff' },
 
   summaryIconWrap: {
     width: 48,

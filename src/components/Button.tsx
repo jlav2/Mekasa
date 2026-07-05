@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   Pressable,
   View,
@@ -6,6 +6,7 @@ import {
   ViewStyle,
   ActivityIndicator,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Txt } from './Txt';
 import { colors, fonts, shadows } from '../theme';
 
@@ -78,17 +79,25 @@ export function Button({
 }) {
   const h = heights[size];
   const glow = variant === 'primary' ? shadows.cta : undefined;
+  const [pressed, setPressed] = useState(false);
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       disabled={disabled || loading}
-      style={({ pressed }) => [
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      style={[
         styles.base,
-        { height: h, borderRadius: h / 2, opacity: disabled ? 0.5 : 1 },
+        { height: h, borderRadius: h / 2 },
         full && { alignSelf: 'stretch' },
         fills[variant],
         glow,
-        pressed && { opacity: 0.85 },
+        {
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+          opacity: disabled ? 0.5 : pressed ? 0.9 : 1,
+          transitionProperty: ['transform', 'opacity'],
+          transitionDuration: 90,
+        },
         style,
       ]}
     >
@@ -111,9 +120,11 @@ export function Button({
           {iconRight}
         </View>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const styles = StyleSheet.create({
   base: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 },

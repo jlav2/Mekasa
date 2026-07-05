@@ -20,6 +20,7 @@ type AppState = {
   joinCircle: (circleId: string) => void;
   sendMessage: (circleId: string, text: string) => void;
   markAllRead: () => void;
+  markRead: (id: string) => void;
 };
 
 const nowTime = () =>
@@ -104,4 +105,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   markAllRead: () =>
     set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, unread: false })) })),
+
+  markRead: (id) =>
+    set((s) => ({
+      notifications: s.notifications.map((n) => (n.id === id ? { ...n, unread: false } : n)),
+    })),
 }));

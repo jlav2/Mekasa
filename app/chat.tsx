@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { View, ScrollView, StyleSheet, Pressable, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import Animated, { FadeInDown, LayoutAnimationConfig } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt, Icon, DecorRing, RingBadge, HeroIconButton } from '../src/components';
 import { colors, fonts } from '../src/theme';
@@ -145,12 +146,21 @@ export default function Chat() {
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
       >
-        {messages.map((m) => {
-          if (m.kind === 'join') return <JoinBubble key={m.id} text={m.text} />;
-          if (m.kind === 'milestone') return <MilestoneBubble key={m.id} text={m.text} />;
-          if (m.kind === 'out') return <OutgoingBubble key={m.id} m={m} />;
-          return <IncomingBubble key={m.id} m={m} />;
-        })}
+        {/* skipEntering: history must not animate on screen mount — only newly sent messages */}
+        <LayoutAnimationConfig skipEntering>
+          {messages.map((m) => {
+            let bubble: React.ReactNode;
+            if (m.kind === 'join') bubble = <JoinBubble text={m.text} />;
+            else if (m.kind === 'milestone') bubble = <MilestoneBubble text={m.text} />;
+            else if (m.kind === 'out') bubble = <OutgoingBubble m={m} />;
+            else bubble = <IncomingBubble m={m} />;
+            return (
+              <Animated.View key={m.id} entering={FadeInDown.duration(220)}>
+                {bubble}
+              </Animated.View>
+            );
+          })}
+        </LayoutAnimationConfig>
       </ScrollView>
 
       {/* quick replies */}

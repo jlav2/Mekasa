@@ -1,5 +1,6 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import Animated, { ZoomIn, FadeOut, LinearTransition, LayoutAnimationConfig } from 'react-native-reanimated';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
 import { Screen, Txt, Icon, SandRing, DecorRing, HeroIconButton, StatusDot, Button } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
@@ -119,27 +120,32 @@ export default function CircleDetail() {
                   : `${circle.players.length} מתוך ${circle.capacity} — חסרים ${missing}`}
             </Txt>
           </View>
-          <View style={styles.playersRow}>
-            {circle.players.map((p, i) => (
-              <View key={p.id} style={styles.playerCol}>
-                <SandRing size={64} color={colors.live} strokeWidth={2.5} rotate={RING_ROTATIONS[i % RING_ROTATIONS.length]} variant={1}>
-                  <View style={[styles.playerAvatar, { backgroundColor: p.avatarColor }]}>
-                    <Txt style={styles.playerAvatarTxt}>{p.avatarInitial}</Txt>
-                  </View>
-                </SandRing>
-                <Txt style={styles.playerName}>{p.name}</Txt>
-                {p.id === circle.hostId && <Txt style={styles.playerHost}>מארח</Txt>}
-              </View>
-            ))}
-            {!full && !joined && (
-              <Pressable style={styles.playerCol} onPress={onJoin}>
-                <View style={styles.emptySlot}>
-                  <Txt style={styles.emptySlotPlus}>+</Txt>
-                </View>
-                <Txt style={styles.emptySlotLabel}>זה אתה?</Txt>
-              </Pressable>
-            )}
-          </View>
+          {/* skipEntering: only a mid-session join animates in, not the initial roster */}
+          <LayoutAnimationConfig skipEntering>
+            <Animated.View style={styles.playersRow} layout={LinearTransition.duration(250)}>
+              {circle.players.map((p, i) => (
+                <Animated.View key={p.id} entering={ZoomIn.duration(250)} style={styles.playerCol}>
+                  <SandRing size={64} color={colors.live} strokeWidth={2.5} rotate={RING_ROTATIONS[i % RING_ROTATIONS.length]} variant={1}>
+                    <View style={[styles.playerAvatar, { backgroundColor: p.avatarColor }]}>
+                      <Txt style={styles.playerAvatarTxt}>{p.avatarInitial}</Txt>
+                    </View>
+                  </SandRing>
+                  <Txt style={styles.playerName}>{p.name}</Txt>
+                  {p.id === circle.hostId && <Txt style={styles.playerHost}>מארח</Txt>}
+                </Animated.View>
+              ))}
+              {!full && !joined && (
+                <Animated.View exiting={FadeOut.duration(150)}>
+                  <Pressable style={styles.playerCol} onPress={onJoin}>
+                    <View style={styles.emptySlot}>
+                      <Txt style={styles.emptySlotPlus}>+</Txt>
+                    </View>
+                    <Txt style={styles.emptySlotLabel}>זה אתה?</Txt>
+                  </Pressable>
+                </Animated.View>
+              )}
+            </Animated.View>
+          </LayoutAnimationConfig>
         </View>
 
         {/* info list */}

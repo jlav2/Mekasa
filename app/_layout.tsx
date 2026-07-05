@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -41,15 +42,17 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.sandBg },
-          animation: 'slide_from_left', // RTL-forward feel
-        }}
-      />
-    </SafeAreaProvider>
+    <GestureHandlerRootView>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.sandBg },
+            animation: 'slide_from_left', // RTL-forward feel
+          }}
+        />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
