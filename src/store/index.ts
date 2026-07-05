@@ -12,6 +12,7 @@ import {
   fetchProfile,
   pushCreateCircle,
   pushJoin,
+  pushLeave,
   pushMarkRead,
   pushMessages,
   signInGuest,
@@ -92,6 +93,7 @@ type AppState = {
   cycleFilter: (key: keyof MapFilter) => void;
   createCircle: (input: CreateCircleInput) => string;
   joinCircle: (circleId: string) => void;
+  leaveCircle: (circleId: string) => void;
   sendMessage: (circleId: string, text: string) => void;
   markAllRead: () => void;
   markRead: (id: string) => void;
@@ -103,6 +105,7 @@ const nowTime = () =>
 const msgId = () => `msg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
 let unsubscribe: (() => void) | null = null;
+let goingLive = false; // guards against two concurrent goLive runs (hydrate + auth action)
 
 type Set = (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
 type Get = () => AppState;
@@ -138,6 +141,23 @@ function freshUser(uid: string, name: string): User {
 
 // Load profile + data and start realtime for a signed-in uid (real or guest).
 async function goLive(
+  set: Set,
+  get: Get,
+  uid: string,
+  kind: 'guest' | 'user',
+  overrideName?: string,
+  overrideUsername?: string,
+) {
+  if (goingLive || get().live) return; // in-flight / already live guard
+  goingLive = true;
+  try {
+    await runGoLive(set, get, uid, kind, overrideName, overrideUsername);
+  } finally {
+    goingLive = false;
+  }
+}
+
+async function runGoLive(
   set: Set,
   get: Get,
   uid: string,
@@ -190,6 +210,25 @@ function subscribeAll(set: Set) {
       set((s) =>
         s.circles.some((c) => c.id === circle.id) ? s : { circles: [...s.circles, circle] },
       ),
+    onCircleRemove: (id) =>
+      set((s) => ({
+        circles: s.circles.filter((c) => c.id !== id),
+        messages: s.messages.filter((m) => m.circleId !== id),
+      })),
+    onPlayerRemove: (circleId, userId) =>
+      set((s) => ({
+        circles: s.circles.map((c) =>
+          c.id === circleId
+            ? {
+                ...c,
+                players: c.players.filter((p) => p.id !== userId),
+                // dropping below capacity reopens a live circle (mirrors the DB trigger)
+                state:
+                  c.state === 'live' && c.players.length - 1 < c.capacity ? 'missing' : c.state,
+              }
+            : c,
+        ),
+      })),
     onPlayerInsert: (circleId, player) =>
       set((s) => ({
         circles: s.circles.map((c) => {
@@ -462,6 +501,19 @@ export const useStore = create<AppState>((set, get) => ({
         }));
       });
     }
+  },
+
+  leaveCircle: (circleId) => {
+    const { user, circles } = get();
+    const circle = circles.find((c) => c.id === circleId);
+    if (!circle || !circle.players.some((p) => p.id === user.id)) return;
+    const players = circle.players.filter((p) => p.id !== user.id);
+    // leaving reopens a circle that was full (mirrors the DB trigger)
+    const state = circle.state === 'live' && players.length < circle.capacity ? 'missing' : circle.state;
+    set({
+      circles: circles.map((c) => (c.id === circleId ? { ...c, players, state } : c)),
+    });
+    if (get().live) pushLeave(circleId, user.id);
   },
 
   sendMessage: (circleId, text) => {

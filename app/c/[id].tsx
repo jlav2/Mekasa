@@ -1,4 +1,4 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Animated, { ZoomIn, FadeOut, LinearTransition, LayoutAnimationConfig } from 'react-native-reanimated';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
@@ -51,8 +51,27 @@ export default function CircleDetail() {
   const circle = useStore((s) => s.circleById(id ?? ''));
   const joined = useStore((s) => s.isJoined(id ?? ''));
   const joinCircle = useStore((s) => s.joinCircle);
+  const leaveCircle = useStore((s) => s.leaveCircle);
+  const userId = useStore((s) => s.user.id);
 
   if (!circle) return <NotFound />;
+
+  const isHost = circle.hostId === userId;
+
+  const onLeave = async () => {
+    const ok =
+      Platform.OS === 'web'
+        ? typeof window !== 'undefined' && window.confirm('לעזוב את המעגל?')
+        : await new Promise<boolean>((resolve) =>
+            Alert.alert('לעזוב את המעגל?', undefined, [
+              { text: 'ביטול', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'עזוב', style: 'destructive', onPress: () => resolve(true) },
+            ]),
+          );
+    if (!ok) return;
+    leaveCircle(circle.id);
+    router.replace('/map');
+  };
 
   const missing = circle.capacity - circle.players.length;
   const full = missing === 0;
@@ -188,6 +207,12 @@ export default function CircleDetail() {
             <Txt style={styles.noteTxt}>{circle.hostNote}</Txt>
           </View>
         ) : null}
+
+        {joined && !isHost && (
+          <Pressable onPress={onLeave} style={styles.leaveBtn} accessibilityRole="button">
+            <Txt style={styles.leaveTxt}>עזוב את המעגל</Txt>
+          </Pressable>
+        )}
       </View>
 
       {/* footer */}
@@ -301,6 +326,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  leaveBtn: { alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 16 },
+  leaveTxt: { fontSize: 13, fontFamily: fonts.bold, color: colors.danger, textDecorationLine: 'underline' },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   notFoundTitle: { fontFamily: fonts.displayBold, fontSize: 40, color: colors.petrol, marginTop: 16 },
   notFoundSub: { fontSize: 13.5, color: colors.muted, fontFamily: fonts.medium },

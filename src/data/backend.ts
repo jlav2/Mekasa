@@ -358,8 +358,10 @@ export async function fetchAll(): Promise<{
 // (our own optimistic writes echo back through these).
 export function subscribeRealtime(handlers: {
   onPlayerInsert: (circleId: string, player: Player) => void;
+  onPlayerRemove: (circleId: string, userId: string) => void;
   onCircleInsert: (circle: Circle) => void;
   onCircleUpdate: (circle: Partial<Circle> & { id: string }) => void;
+  onCircleRemove: (id: string) => void;
   onMessageInsert: (message: ChatMessage) => void;
   onNotificationInsert: (notification: AppNotification) => void;
   onNotificationUpdate: (id: string, unread: boolean) => void;
@@ -372,6 +374,14 @@ export function subscribeRealtime(handlers: {
       const r = p.new as PlayerRow;
       handlers.onPlayerInsert(r.circle_id, toPlayer(r));
     })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'players' }, (p) => {
+      // DELETE payloads carry only the replica-identity (primary key = "<circle>:<user>")
+      const id = (p.old as Partial<PlayerRow>).id;
+      if (id) {
+        const sep = id.indexOf(':');
+        handlers.onPlayerRemove(id.slice(0, sep), id.slice(sep + 1));
+      }
+    })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'circles' }, (p) => {
       // players arrive via their own INSERT events right after
       handlers.onCircleInsert(toCircle(p.new as CircleRow));
@@ -379,6 +389,10 @@ export function subscribeRealtime(handlers: {
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'circles' }, (p) => {
       const r = p.new as CircleRow;
       handlers.onCircleUpdate({ id: r.id, state: r.state, isOpen: r.is_open });
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'circles' }, (p) => {
+      const id = (p.old as Partial<CircleRow>).id;
+      if (id) handlers.onCircleRemove(id);
     })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (p) => {
       handlers.onMessageInsert(toMessage(p.new as MessageRow));
@@ -490,6 +504,16 @@ export function pushMessages(messages: ChatMessage[]) {
       { onConflict: 'id' },
     )
     .then(({ error }) => error && warn('pushMessages')(error));
+}
+
+export function pushLeave(circleId: string, userId: string) {
+  const sb = supabase;
+  if (!sb) return;
+  sb
+    .from('players')
+    .delete()
+    .eq('id', `${circleId}:${userId}`)
+    .then(({ error }) => error && warn('pushLeave')(error));
 }
 
 export function pushMarkRead(ids: string[]) {
