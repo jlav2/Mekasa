@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
 import { Screen, Txt, Icon, DecorRing } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
+import { useStore } from '../src/store';
+import { BEACH_OPTIONS } from '../src/data/beaches';
 
 type Court = { label: string; sub: string; state: 'taken' | 'selected' | 'note' };
 const COURTS: Court[] = [
@@ -23,6 +25,14 @@ const OTHER_BEACHES: Beach[] = [
 export default function BeachPicker() {
   const router = useRouter();
   const [courtIdx, setCourtIdx] = useState(1);
+  const draftBeach = useStore((st) => st.draftBeach);
+  const setDraftBeach = useStore((st) => st.setDraftBeach);
+
+  const pick = (name: string) => {
+    const opt = BEACH_OPTIONS.find((b) => b.name === name);
+    if (opt) setDraftBeach(opt);
+    router.back();
+  };
 
   return (
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }}>
@@ -85,8 +95,9 @@ export default function BeachPicker() {
         {/* other beaches */}
         <View style={styles.othersCard}>
           {OTHER_BEACHES.map((b, i) => (
-            <View
+            <Pressable
               key={b.name}
+              onPress={() => pick(b.name)}
               style={[styles.otherRow, i !== OTHER_BEACHES.length - 1 && styles.otherRowBorder]}
             >
               <View style={{ flex: 1 }}>
@@ -99,7 +110,7 @@ export default function BeachPicker() {
                   <Txt style={styles.liveTagTxt}>פעיל עכשיו</Txt>
                 </View>
               )}
-            </View>
+            </Pressable>
           ))}
         </View>
 
@@ -118,7 +129,7 @@ export default function BeachPicker() {
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.cta} onPress={() => router.back()}>
+        <Pressable style={styles.cta} onPress={() => pick('חוף פרישמן')}>
           <Txt style={styles.ctaTxt}>בחר: פרישמן · מגרש 2</Txt>
         </Pressable>
       </View>

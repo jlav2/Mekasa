@@ -109,16 +109,6 @@ export function LiveMap({
     map.once('idle', restyle);
     if (map.isStyleLoaded()) restyle();
 
-    // circle markers — portal targets
-    const els: Record<string, HTMLElement> = {};
-    for (const m of markers) {
-      const el = document.createElement('div');
-      el.style.zIndex = '2';
-      new maplibregl.Marker({ element: el, anchor: 'center' })
-        .setLngLat([m.lng, m.lat])
-        .addTo(map);
-      els[m.id] = el;
-    }
     // user dot
     if (showUser) {
       const u = document.createElement('div');
@@ -130,15 +120,39 @@ export function LiveMap({
         .setLngLat([USER_LOCATION.lng, USER_LOCATION.lat])
         .addTo(map);
     }
-    setMarkerEls(els);
 
     return () => {
       map.remove();
       mapRef.current = null;
     };
-    // markers/showUser are static per screen — mount once
+    // map instance + user dot are static per screen — mount once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // circle markers — reconcile portal targets against the (live) markers prop,
+  // so circles created/removed after mount appear without a remount
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    setMarkerEls((prev) => {
+      const next: Record<string, HTMLElement> = {};
+      for (const m of markers) {
+        let el = prev[m.id];
+        if (!el) {
+          el = document.createElement('div');
+          el.style.zIndex = '2';
+          new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([m.lng, m.lat])
+            .addTo(map);
+        }
+        next[m.id] = el;
+      }
+      for (const id of Object.keys(prev)) {
+        if (!next[id]) prev[id].parentElement?.remove(); // maplibre marker wrapper
+      }
+      return next;
+    });
+  }, [markers]);
 
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.sandMap }, style]}>

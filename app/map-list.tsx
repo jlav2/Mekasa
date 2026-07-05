@@ -5,6 +5,8 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 import { useRouter } from 'expo-router';
 import { LiveMap, Txt, Chip, Icon, RingBadge, TabBar } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
+import { useStore } from '../src/store';
+import { markersFromCircles } from '../src/data/beaches';
 
 // Sheet snap positions as fractions of window height
 const EXPANDED_TOP = 0.15;
@@ -109,6 +111,8 @@ function CircleRow({ circle, last, onPress }: { circle: Circle; last?: boolean; 
 export default function MapList() {
   const router = useRouter();
   const { height: winH } = useWindowDimensions();
+  const storeCircles = useStore((st) => st.circles);
+  const markers = useMemo(() => markersFromCircles(storeCircles), [storeCircles]);
 
   // 0 = expanded, restOffset = default half-screen position
   const restOffset = (DEFAULT_TOP - EXPANDED_TOP) * winH;
@@ -147,6 +151,7 @@ export default function MapList() {
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
       <View style={styles.mapWrap}>
         <LiveMap
+          markers={markers}
           onMarkerPress={(m) =>
             m.state === 'tournament'
               ? router.push('/tournament')

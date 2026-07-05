@@ -13,6 +13,7 @@ import {
   Button,
 } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
+import { useStore } from '../src/store';
 
 type Sport = { key: string; name: string; icon: 'footvolley' | 'altinha' | 'volleyball' };
 const SPORTS: Sport[] = [
@@ -30,6 +31,22 @@ export default function CreateCircle() {
   const [missing, setMissing] = useState(3);
   const [levelIdx, setLevelIdx] = useState(1);
   const [open, setOpen] = useState(true);
+  const draftBeach = useStore((st) => st.draftBeach);
+  const createCircle = useStore((st) => st.createCircle);
+
+  const create = () => {
+    const chosen = SPORTS.find((sp) => sp.key === sport)!;
+    const id = createCircle({
+      sport: chosen.key as any,
+      sportLabel: chosen.name,
+      missing,
+      levelLabel: LEVELS[levelIdx],
+      startLabel: ['עכשיו', 'בעוד שעה', 'בהמשך'][timeIdx],
+      scheduled: timeIdx === 2,
+      isOpen: open,
+    });
+    router.replace({ pathname: '/c/[id]', params: { id } });
+  };
 
   return (
     <Screen bg={colors.sandBg} contentStyle={{ paddingTop: 70, paddingBottom: 40, flexGrow: 1 }}>
@@ -70,8 +87,8 @@ export default function CreateCircle() {
           <SvgCircle cx={10} cy={8} r={2.3} fill={colors.sunset} />
         </Svg>
         <View style={{ flex: 1 }}>
-          <Txt style={styles.locationTitle}>חוף פרישמן · מגרש 2</Txt>
-          <Txt style={styles.locationSub}>הכי קרוב אליך · 300 מ&apos;</Txt>
+          <Txt style={styles.locationTitle}>{draftBeach.name} · {draftBeach.court}</Txt>
+          <Txt style={styles.locationSub}>הכי קרוב אליך</Txt>
         </View>
         <Txt style={styles.locationChange}>שנה</Txt>
       </Pressable>
@@ -113,7 +130,7 @@ export default function CreateCircle() {
         <Button
           label={timeIdx === 0 ? 'פתח מעגל — עכשיו' : 'פתח מעגל'}
           size="lg"
-          onPress={() => router.push('/circle-share')}
+          onPress={create}
         />
       </View>
     </Screen>

@@ -172,6 +172,7 @@ export async function fetchAll(): Promise<{
 // (our own optimistic writes echo back through these).
 export function subscribeRealtime(handlers: {
   onPlayerInsert: (circleId: string, player: Player) => void;
+  onCircleInsert: (circle: Circle) => void;
   onCircleUpdate: (circle: Partial<Circle> & { id: string }) => void;
   onMessageInsert: (message: ChatMessage) => void;
   onNotificationUpdate: (id: string, unread: boolean) => void;
@@ -183,6 +184,10 @@ export function subscribeRealtime(handlers: {
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'players' }, (p) => {
       const r = p.new as PlayerRow;
       handlers.onPlayerInsert(r.circle_id, toPlayer(r));
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'circles' }, (p) => {
+      // players arrive via their own INSERT events right after
+      handlers.onCircleInsert(toCircle(p.new as CircleRow));
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'circles' }, (p) => {
       const r = p.new as CircleRow;
@@ -222,6 +227,52 @@ export function pushJoin(circle: Circle, player: Player, events: ChatMessage[]) 
     .then(({ error }) => {
       if (error) return warn('pushJoin/player')(error);
       pushMessages(events);
+    });
+}
+
+export function pushCreateCircle(circle: Circle, host: Player, events: ChatMessage[]) {
+  const sb = supabase;
+  if (!sb) return;
+  // Order matters under RLS: circle (host_id = uid) → host player row →
+  // opening message (requires membership).
+  sb
+    .from('circles')
+    .insert({
+      id: circle.id,
+      sport: circle.sport,
+      sport_label: circle.sportLabel,
+      beach_id: circle.beachId,
+      beach_name: circle.beachName,
+      court: circle.court,
+      level_label: circle.levelLabel,
+      capacity: circle.capacity,
+      state: circle.state,
+      is_open: circle.isOpen,
+      host_id: circle.hostId,
+      host_name: circle.hostName,
+      start_label: circle.startLabel,
+      distance_label: circle.distanceLabel,
+      host_note: circle.hostNote ?? null,
+      lat: circle.lat,
+      lng: circle.lng,
+    })
+    .then(({ error }) => {
+      if (error) return warn('pushCreateCircle/circle')(error);
+      sb
+        .from('players')
+        .insert({
+          id: `${circle.id}:${host.id}`,
+          circle_id: circle.id,
+          user_id: host.id,
+          name: host.name,
+          avatar_initial: host.avatarInitial,
+          avatar_color: host.avatarColor,
+          position: 0,
+        })
+        .then(({ error: e }) => {
+          if (e) return warn('pushCreateCircle/host')(e);
+          pushMessages(events);
+        });
     });
 }
 

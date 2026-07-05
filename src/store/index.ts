@@ -8,13 +8,26 @@ import { CHAT_MESSAGES, CIRCLES, CURRENT_USER, NOTIFICATIONS } from '../data/fix
 import {
   ensureSignedIn,
   fetchAll,
+  pushCreateCircle,
   pushJoin,
   pushMarkRead,
   pushMessages,
   subscribeRealtime,
   upsertProfile,
 } from '../data/backend';
+import { BEACH_OPTIONS, distanceLabelFrom, type BeachOption } from '../data/beaches';
+import type { Sport } from '../data/models';
 import { isSupabaseConfigured } from '../lib/supabase';
+
+export type CreateCircleInput = {
+  sport: Sport;
+  sportLabel: string;
+  missing: number; // players wanted besides the host
+  levelLabel: string;
+  startLabel: string;
+  scheduled: boolean;
+  isOpen: boolean;
+};
 
 type AppState = {
   user: User;
@@ -22,6 +35,7 @@ type AppState = {
   messages: ChatMessage[];
   notifications: AppNotification[];
   live: boolean; // true once hydrated from Supabase
+  draftBeach: BeachOption; // create-circle location choice (set by beach-picker)
 
   // derived helpers
   circleById: (id: string) => Circle | undefined;
@@ -31,6 +45,8 @@ type AppState = {
 
   // actions
   hydrate: () => Promise<void>;
+  setDraftBeach: (beach: BeachOption) => void;
+  createCircle: (input: CreateCircleInput) => string;
   joinCircle: (circleId: string) => void;
   sendMessage: (circleId: string, text: string) => void;
   markAllRead: () => void;
@@ -50,6 +66,7 @@ export const useStore = create<AppState>((set, get) => ({
   messages: CHAT_MESSAGES,
   notifications: NOTIFICATIONS,
   live: false,
+  draftBeach: BEACH_OPTIONS[0],
 
   circleById: (id) => get().circles.find((c) => c.id === id),
   messagesFor: (circleId) => get().messages.filter((m) => m.circleId === circleId),
@@ -85,6 +102,10 @@ export const useStore = create<AppState>((set, get) => ({
 
     unsubscribe?.();
     unsubscribe = subscribeRealtime({
+      onCircleInsert: (circle) =>
+        set((s) =>
+          s.circles.some((c) => c.id === circle.id) ? s : { circles: [...s.circles, circle] },
+        ),
       onPlayerInsert: (circleId, player) =>
         set((s) => ({
           circles: s.circles.map((c) => {
@@ -108,6 +129,51 @@ export const useStore = create<AppState>((set, get) => ({
           notifications: s.notifications.map((n) => (n.id === id ? { ...n, unread } : n)),
         })),
     });
+  },
+
+  setDraftBeach: (beach) => set({ draftBeach: beach }),
+
+  createCircle: (input) => {
+    const { user, draftBeach } = get();
+    const id = `c-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+    const host: Player = {
+      id: user.id,
+      name: user.name,
+      avatarInitial: user.avatarInitial,
+      avatarColor: user.avatarColor,
+    };
+    const circle: Circle = {
+      id,
+      sport: input.sport,
+      sportLabel: input.sportLabel,
+      beachId: draftBeach.id,
+      beachName: draftBeach.name,
+      court: draftBeach.court,
+      levelLabel: input.levelLabel,
+      capacity: input.missing + 1, // host takes the first slot
+      players: [host],
+      waitlist: [],
+      state: input.scheduled ? 'scheduled' : 'missing',
+      isOpen: input.isOpen,
+      hostId: user.id,
+      hostName: user.name,
+      startLabel: input.startLabel,
+      distanceLabel: distanceLabelFrom(draftBeach.lat, draftBeach.lng),
+      // nudge off the beach anchor so markers don't stack on existing circles
+      lat: draftBeach.lat + ((Date.now() % 7) - 3) * 0.0004,
+      lng: draftBeach.lng + ((Date.now() % 5) - 2) * 0.0003,
+    };
+    const time = nowTime();
+    const opening: ChatMessage = {
+      id: `evt-open-${id}`,
+      circleId: id,
+      kind: 'join',
+      text: `${user.name} פתח את המעגל · ${time}`,
+      time,
+    };
+    set((s) => ({ circles: [...s.circles, circle], messages: [...s.messages, opening] }));
+    if (get().live) pushCreateCircle(circle, host, [opening]);
+    return id;
   },
 
   joinCircle: (circleId) => {

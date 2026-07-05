@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { markersFromCircles } from '../../src/data/beaches';
 import {
   LiveMap,
     Card,
@@ -20,6 +22,8 @@ function Dot({ color }: { color: string }) {
 
 export default function Map() {
   const router = useRouter();
+  const circles = useStore((s) => s.circles);
+  const markers = useMemo(() => markersFromCircles(circles), [circles]);
   const nearest = useStore((s) => s.circles.find((c) => c.id === 'frishman'))!;
   const joined = useStore((s) => s.isJoined('frishman'));
   const joinCircle = useStore((s) => s.joinCircle);
@@ -33,6 +37,7 @@ export default function Map() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
       <LiveMap
+        markers={markers}
         onMarkerPress={(m) =>
           m.state === 'tournament'
             ? router.push('/tournament')
