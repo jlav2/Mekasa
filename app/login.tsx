@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt, AppleGlyph, GoogleGlyph, FacebookGlyph } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
+import { ensureSignedIn } from '../src/data/backend';
 
 function SeaHorizon() {
   return (
@@ -44,7 +45,12 @@ function SsoButton({ children, bg, color, border, onPress }: any) {
 export default function Login() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const go = () => router.push('/onboarding-sport');
+  // Anonymous Supabase session for now — real Apple/Google/Facebook OAuth
+  // can link onto the same user later without losing their data.
+  const go = () => {
+    ensureSignedIn(); // no-op offline; root layout hydrate also covers this
+    router.push('/onboarding-sport');
+  };
   return (
     <LinearGradient
       colors={['#FFC46B', '#FF9D52', '#F7B573', '#F7EFDE', '#F7EFDE']}

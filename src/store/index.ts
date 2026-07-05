@@ -5,7 +5,15 @@
 import { create } from 'zustand';
 import type { AppNotification, ChatMessage, Circle, Player, User } from '../data/models';
 import { CHAT_MESSAGES, CIRCLES, CURRENT_USER, NOTIFICATIONS } from '../data/fixtures';
-import { fetchAll, pushJoin, pushMarkRead, pushMessages, subscribeRealtime } from '../data/backend';
+import {
+  ensureSignedIn,
+  fetchAll,
+  pushJoin,
+  pushMarkRead,
+  pushMessages,
+  subscribeRealtime,
+  upsertProfile,
+} from '../data/backend';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 type AppState = {
@@ -55,6 +63,22 @@ export const useStore = create<AppState>((set, get) => ({
 
   hydrate: async () => {
     if (!isSupabaseConfigured || get().live) return;
+
+    // Sign in (anonymous for now) — the auth uid becomes the user's identity
+    // so joins/messages satisfy RLS and survive across sessions.
+    const uid = await ensureSignedIn();
+    if (uid) {
+      const user: User = { ...get().user, id: uid };
+      set({ user });
+      upsertProfile({
+        userId: uid,
+        name: user.name,
+        avatarInitial: user.avatarInitial,
+        avatarColor: user.avatarColor,
+        isPro: user.isPro,
+      });
+    }
+
     const data = await fetchAll();
     if (!data) return; // fetch failed → stay on fixtures
     set({ ...data, live: true });
@@ -131,7 +155,7 @@ export const useStore = create<AppState>((set, get) => ({
       circles: circles.map((c) => (c.id === circleId ? updated : c)),
       messages: [...messages, ...events],
     });
-    if (get().live) pushJoin(circle, me, events, nowFull);
+    if (get().live) pushJoin(circle, me, events);
   },
 
   sendMessage: (circleId, text) => {

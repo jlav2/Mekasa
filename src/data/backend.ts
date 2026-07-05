@@ -113,6 +113,39 @@ const toNotification = (r: NotificationRow): AppNotification => ({
 
 const warn = (op: string) => (e: unknown) => console.warn(`[backend] ${op} failed:`, e);
 
+// ---- auth ----
+
+// Anonymous session for now — the SSO buttons will layer real OAuth on top
+// later (Supabase links anonymous users to a provider without losing data).
+export async function ensureSignedIn(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  if (data.session) return data.session.user.id;
+  const { data: signIn, error } = await supabase.auth.signInAnonymously();
+  if (error) {
+    warn('ensureSignedIn')(error);
+    return null;
+  }
+  return signIn.user?.id ?? null;
+}
+
+export function upsertProfile(p: { userId: string; name: string; avatarInitial: string; avatarColor: string; isPro: boolean }) {
+  if (!supabase) return;
+  supabase
+    .from('profiles')
+    .upsert(
+      {
+        user_id: p.userId,
+        name: p.name,
+        avatar_initial: p.avatarInitial,
+        avatar_color: p.avatarColor,
+        is_pro: p.isPro,
+      },
+      { onConflict: 'user_id' },
+    )
+    .then(({ error }) => error && warn('upsertProfile')(error));
+}
+
 export async function fetchAll(): Promise<{
   circles: Circle[];
   messages: ChatMessage[];
@@ -170,9 +203,11 @@ export function subscribeRealtime(handlers: {
 
 // ---- write-through pushes (optimistic UI already applied locally) ----
 
-export function pushJoin(circle: Circle, player: Player, events: ChatMessage[], nowFull: boolean) {
+export function pushJoin(circle: Circle, player: Player, events: ChatMessage[]) {
   const sb = supabase;
   if (!sb) return;
+  // The full-circle state flip happens in a DB trigger (the joiner isn't the
+  // host, so RLS forbids updating the circle row from here).
   sb
     .from('players')
     .insert({
@@ -186,13 +221,6 @@ export function pushJoin(circle: Circle, player: Player, events: ChatMessage[], 
     })
     .then(({ error }) => {
       if (error) return warn('pushJoin/player')(error);
-      if (nowFull) {
-        sb
-          .from('circles')
-          .update({ state: 'live' })
-          .eq('id', circle.id)
-          .then(({ error: e }) => e && warn('pushJoin/state')(e));
-      }
       pushMessages(events);
     });
 }
