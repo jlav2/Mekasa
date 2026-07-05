@@ -2,6 +2,9 @@
 // subscriptions and write-through pushes. The store stays the single
 // source of truth for the UI; everything here is fire-and-forget with
 // console warnings on failure (offline demo keeps working).
+import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../lib/supabase';
 import type { AppNotification, ChatMessage, Circle, Player, SportProfile } from './models';
 
@@ -191,6 +194,30 @@ export async function signInPassword(identifier: string, password: string): Prom
 export async function signOut(): Promise<void> {
   if (!supabase) return;
   await supabase.auth.signOut().catch(warn('signOut'));
+}
+
+// Apple / Google OAuth. Web: full-page redirect (supabase parses the hash on
+// return via detectSessionInUrl). Native: open the provider in a web browser,
+// then exchange the returned PKCE code for a session. Requires the provider to
+// be enabled in the Supabase dashboard (client id/secret) — otherwise errors.
+export async function signInWithProvider(provider: 'apple' | 'google'): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  const redirectTo = makeRedirectUri({ scheme: 'mekasa', path: 'auth-callback' });
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo, skipBrowserRedirect: Platform.OS !== 'web' },
+  });
+  if (error) return { ok: false, error: error.message };
+  if (Platform.OS === 'web') return { ok: true }; // browser redirects; session on return
+
+  // Native: drive the auth session ourselves
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (result.type !== 'success') return { ok: false, error: 'ההתחברות בוטלה' };
+  const code = new URL(result.url).searchParams.get('code');
+  if (!code) return { ok: false, error: 'לא התקבל קוד אימות' };
+  const { data: session, error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+  if (exErr) return { ok: false, error: exErr.message };
+  return { ok: true, userId: session.user?.id };
 }
 
 export async function fetchProfile(userId: string): Promise<{

@@ -15,6 +15,7 @@ import {
   pushMessages,
   signInGuest,
   signInPassword,
+  signInWithProvider as backendOAuth,
   signOut as backendSignOut,
   signUpEmail as backendSignUpEmail,
   subscribeRealtime,
@@ -70,6 +71,7 @@ type AppState = {
   ) => Promise<AuthResult & { name: string; username: string; email: string }>;
   verifyOtp: (email: string, token: string, name: string, username: string) => Promise<AuthResult>;
   logIn: (identifier: string, password: string) => Promise<AuthResult>;
+  signInWithProvider: (provider: 'apple' | 'google') => Promise<AuthResult>;
   logOut: () => Promise<void>;
   checkUsername: (username: string) => Promise<boolean>;
   setDraftBeach: (beach: BeachOption) => void;
@@ -212,6 +214,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   logIn: async (identifier, password) => {
     const res = await signInPassword(identifier, password);
+    if (res.ok && res.userId) await goLive(set, get, res.userId, 'user');
+    return res;
+  },
+
+  signInWithProvider: async (provider) => {
+    const res = await backendOAuth(provider);
+    // Web redirects away and re-hydrates on return; native returns a userId here.
     if (res.ok && res.userId) await goLive(set, get, res.userId, 'user');
     return res;
   },

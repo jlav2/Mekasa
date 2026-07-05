@@ -4,9 +4,20 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Txt, Button } from '../src/components';
+import { Txt, Button, AppleGlyph, GoogleGlyph } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
+
+function SsoButton({ children, bg, color, border, onPress }: any) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.sso, { backgroundColor: bg }, border && { borderWidth: 1.5, borderColor: border }]}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 function SeaHorizon() {
   return (
@@ -37,6 +48,17 @@ export default function Login() {
   const router = useRouter();
   const logIn = useStore((s) => s.logIn);
   const continueAsGuest = useStore((s) => s.continueAsGuest);
+  const signInWithProvider = useStore((s) => s.signInWithProvider);
+
+  const oauth = async (provider: 'apple' | 'google') => {
+    setError(null);
+    setBusy(true);
+    const res = await signInWithProvider(provider);
+    setBusy(false);
+    // Web redirects away; native returns here on success.
+    if (res.ok && res.userId) router.replace('/map');
+    else if (!res.ok) setError(res.error ?? 'ההתחברות נכשלה');
+  };
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -125,6 +147,17 @@ export default function Login() {
           <View style={styles.divLine} />
         </View>
 
+        <View style={{ flexDirection: 'row-reverse', gap: 10 }}>
+          <SsoButton bg={colors.ink} onPress={() => oauth('apple')} border={undefined}>
+            <AppleGlyph size={18} color="#fff" />
+            <Txt style={styles.ssoTxt}>Apple</Txt>
+          </SsoButton>
+          <SsoButton bg="#fff" border="rgba(18,48,58,.16)" onPress={() => oauth('google')}>
+            <GoogleGlyph size={18} />
+            <Txt style={[styles.ssoTxt, { color: colors.ink }]}>Google</Txt>
+          </SsoButton>
+        </View>
+
         <Button label="המשך כאורח" variant="secondary" size="md" onPress={guest} />
       </View>
     </LinearGradient>
@@ -162,4 +195,14 @@ const styles = StyleSheet.create({
   dividerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
   divLine: { flex: 1, height: 1, backgroundColor: colors.hairlineStrong },
   divTxt: { fontSize: 12, color: colors.faint, fontFamily: fonts.medium },
+  sso: {
+    flex: 1,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 50,
+    borderRadius: 25,
+  },
+  ssoTxt: { fontSize: 15, fontFamily: fonts.semibold, color: '#fff' },
 });

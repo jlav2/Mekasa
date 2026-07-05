@@ -22,6 +22,8 @@ Without configuration the app runs in offline demo mode (in-memory fixtures, res
 3. `cp .env.example .env` and fill in the URL + anon key from Settings → API.
 4. Restart `npx expo start`. Joins, chat and read-state now persist, and realtime pushes live player counts / messages / badges to every open client.
 
+**Sign up / log in**: email + password with username as an alternate login handle (log in with either); 6-digit in-app OTP confirmation is built and activates automatically when email confirmation is enabled server-side (no magic-link app-hopping). Apple/Google OAuth is wired (`signInWithProvider`, login buttons, `/auth-callback`) and activates once the providers are enabled in Supabase — see [`supabase/OAUTH_SETUP.md`](supabase/OAUTH_SETUP.md). Phone/OTP is deferred behind the same seam (needs an SMS provider). Guest mode uses anonymous auth.
+
 **Auth + RLS**: the app signs in with an anonymous Supabase Auth session on boot (persisted via AsyncStorage/localStorage); the auth uid is your identity and a `profiles` row is upserted for it. Real policies enforce: circles are publicly readable but only their host can modify them, you can only join/leave as yourself, only circle members can post to its chat, and notifications are per-user (seed rows are shared). A security-definer trigger owns the capacity guard and the full→live flip. The login screen's SSO buttons currently create the anonymous session — wiring real Apple/Google OAuth later links onto the same user without losing data.
 
 A **dev screen gallery** listing all 29 screens lives at the `/gallery` route — reachable in-app via Profile (⋮ menu) → הגדרות → פיתוח → גלריית מסכים.
