@@ -6,14 +6,22 @@ import { create } from 'zustand';
 import type { AppNotification, ChatMessage, Circle, Player, User } from '../data/models';
 import { CHAT_MESSAGES, CIRCLES, CURRENT_USER, NOTIFICATIONS } from '../data/fixtures';
 import {
-  ensureSignedIn,
+  sessionInfo,
   fetchAll,
+  fetchProfile,
   pushCreateCircle,
   pushJoin,
   pushMarkRead,
   pushMessages,
+  signInGuest,
+  signInPassword,
+  signOut as backendSignOut,
+  signUpEmail as backendSignUpEmail,
   subscribeRealtime,
   upsertProfile,
+  usernameAvailable,
+  verifyEmailOtp,
+  type AuthResult,
 } from '../data/backend';
 import { BEACH_OPTIONS, distanceLabelFrom, type BeachOption } from '../data/beaches';
 import type { Sport, SportProfile } from '../data/models';
@@ -41,6 +49,7 @@ type AppState = {
   messages: ChatMessage[];
   notifications: AppNotification[];
   live: boolean; // true once hydrated from Supabase
+  authKind: 'none' | 'guest' | 'user'; // account status
   draftBeach: BeachOption; // create-circle location choice (set by beach-picker)
   filter: MapFilter; // map chip filters
 
@@ -52,6 +61,17 @@ type AppState = {
 
   // actions
   hydrate: () => Promise<void>;
+  continueAsGuest: () => Promise<boolean>;
+  signUpEmail: (
+    email: string,
+    password: string,
+    name: string,
+    username: string,
+  ) => Promise<AuthResult & { name: string; username: string; email: string }>;
+  verifyOtp: (email: string, token: string, name: string, username: string) => Promise<AuthResult>;
+  logIn: (identifier: string, password: string) => Promise<AuthResult>;
+  logOut: () => Promise<void>;
+  checkUsername: (username: string) => Promise<boolean>;
   setDraftBeach: (beach: BeachOption) => void;
   setSports: (sports: SportProfile[]) => void;
   cycleFilter: (key: keyof MapFilter) => void;
@@ -69,12 +89,85 @@ const msgId = () => `msg-${Date.now().toString(36)}-${Math.random().toString(36)
 
 let unsubscribe: (() => void) | null = null;
 
+type Set = (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
+type Get = () => AppState;
+
+// Load profile + data and start realtime for a signed-in uid (real or guest).
+async function goLive(
+  set: Set,
+  get: Get,
+  uid: string,
+  kind: 'guest' | 'user',
+  overrideName?: string,
+  overrideUsername?: string,
+) {
+  const profile = await fetchProfile(uid);
+  const base = get().user;
+  const name = overrideName ?? profile?.name ?? base.name;
+  const user: User = {
+    ...base,
+    id: uid,
+    name,
+    avatarInitial: name.trim().charAt(0) || base.avatarInitial,
+    isPro: profile?.isPro ?? base.isPro,
+    sports: profile?.sports ?? base.sports,
+    homeBeaches: profile?.homeBeaches ?? base.homeBeaches,
+  };
+  set({ user, authKind: kind });
+  if (!profile) {
+    upsertProfile({
+      userId: uid,
+      name: user.name,
+      avatarInitial: user.avatarInitial,
+      avatarColor: user.avatarColor,
+      isPro: user.isPro,
+      username: overrideUsername,
+      sports: user.sports,
+      homeBeaches: user.homeBeaches,
+    });
+  }
+  const data = await fetchAll();
+  if (data) set({ ...data, live: true });
+  subscribeAll(set);
+}
+
+function subscribeAll(set: Set) {
+  unsubscribe?.();
+  unsubscribe = subscribeRealtime({
+    onCircleInsert: (circle) =>
+      set((s) =>
+        s.circles.some((c) => c.id === circle.id) ? s : { circles: [...s.circles, circle] },
+      ),
+    onPlayerInsert: (circleId, player) =>
+      set((s) => ({
+        circles: s.circles.map((c) => {
+          if (c.id !== circleId || c.players.some((p) => p.id === player.id)) return c;
+          const players = [...c.players, player];
+          return { ...c, players, state: players.length >= c.capacity ? 'live' : c.state };
+        }),
+      })),
+    onCircleUpdate: (patch) =>
+      set((s) => ({
+        circles: s.circles.map((c) => (c.id === patch.id ? { ...c, ...patch } : c)),
+      })),
+    onMessageInsert: (message) =>
+      set((s) =>
+        s.messages.some((m) => m.id === message.id) ? s : { messages: [...s.messages, message] },
+      ),
+    onNotificationUpdate: (id, unread) =>
+      set((s) => ({
+        notifications: s.notifications.map((n) => (n.id === id ? { ...n, unread } : n)),
+      })),
+  });
+}
+
 export const useStore = create<AppState>((set, get) => ({
   user: CURRENT_USER,
   circles: CIRCLES,
   messages: CHAT_MESSAGES,
   notifications: NOTIFICATIONS,
   live: false,
+  authKind: 'none',
   draftBeach: BEACH_OPTIONS[0],
   filter: { sport: 'all', level: 'all' },
 
@@ -90,56 +183,54 @@ export const useStore = create<AppState>((set, get) => ({
 
   hydrate: async () => {
     if (!isSupabaseConfigured || get().live) return;
+    // Only go live if a session already exists (returning user / guest).
+    // New visitors land on /login; auth actions establish the session.
+    const info = await sessionInfo();
+    if (info) await goLive(set, get, info.id, info.isAnonymous ? 'guest' : 'user');
+  },
 
-    // Sign in (anonymous for now) — the auth uid becomes the user's identity
-    // so joins/messages satisfy RLS and survive across sessions.
-    const uid = await ensureSignedIn();
-    if (uid) {
-      const user: User = { ...get().user, id: uid };
-      set({ user });
-      upsertProfile({
-        userId: uid,
-        name: user.name,
-        avatarInitial: user.avatarInitial,
-        avatarColor: user.avatarColor,
-        isPro: user.isPro,
-      });
+  continueAsGuest: async () => {
+    const uid = await signInGuest();
+    if (uid) await goLive(set, get, uid, 'guest');
+    return !!uid;
+  },
+
+  signUpEmail: async (email, password, name, username) => {
+    const res = await backendSignUpEmail(email, password, name, username);
+    if (res.ok && !res.needsConfirmation && res.userId) {
+      // confirmation disabled → session already active
+      await goLive(set, get, res.userId, 'user', name, username);
     }
+    return { ...res, name, username, email };
+  },
 
-    const data = await fetchAll();
-    if (!data) return; // fetch failed → stay on fixtures
-    set({ ...data, live: true });
+  verifyOtp: async (email, token, name, username) => {
+    const res = await verifyEmailOtp(email, token);
+    if (res.ok && res.userId) await goLive(set, get, res.userId, 'user', name, username);
+    return res;
+  },
 
+  logIn: async (identifier, password) => {
+    const res = await signInPassword(identifier, password);
+    if (res.ok && res.userId) await goLive(set, get, res.userId, 'user');
+    return res;
+  },
+
+  logOut: async () => {
     unsubscribe?.();
-    unsubscribe = subscribeRealtime({
-      onCircleInsert: (circle) =>
-        set((s) =>
-          s.circles.some((c) => c.id === circle.id) ? s : { circles: [...s.circles, circle] },
-        ),
-      onPlayerInsert: (circleId, player) =>
-        set((s) => ({
-          circles: s.circles.map((c) => {
-            if (c.id !== circleId || c.players.some((p) => p.id === player.id)) return c;
-            const players = [...c.players, player];
-            return { ...c, players, state: players.length >= c.capacity ? 'live' : c.state };
-          }),
-        })),
-      onCircleUpdate: (patch) =>
-        set((s) => ({
-          circles: s.circles.map((c) => (c.id === patch.id ? { ...c, ...patch } : c)),
-        })),
-      onMessageInsert: (message) =>
-        set((s) =>
-          s.messages.some((m) => m.id === message.id)
-            ? s
-            : { messages: [...s.messages, message] },
-        ),
-      onNotificationUpdate: (id, unread) =>
-        set((s) => ({
-          notifications: s.notifications.map((n) => (n.id === id ? { ...n, unread } : n)),
-        })),
+    unsubscribe = null;
+    await backendSignOut();
+    set({
+      user: CURRENT_USER,
+      circles: CIRCLES,
+      messages: CHAT_MESSAGES,
+      notifications: NOTIFICATIONS,
+      live: false,
+      authKind: 'none',
     });
   },
+
+  checkUsername: (username) => usernameAvailable(username),
 
   setDraftBeach: (beach) => set({ draftBeach: beach }),
 

@@ -1,11 +1,12 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Txt, AppleGlyph, GoogleGlyph, FacebookGlyph } from '../src/components';
-import { colors, fonts, shadows } from '../src/theme';
-import { ensureSignedIn } from '../src/data/backend';
+import { Txt, Button } from '../src/components';
+import { colors, fonts } from '../src/theme';
+import { useStore } from '../src/store';
 
 function SeaHorizon() {
   return (
@@ -31,26 +32,37 @@ function SeaHorizon() {
   );
 }
 
-function SsoButton({ children, bg, color, border, onPress }: any) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.sso, { backgroundColor: bg }, border && { borderWidth: 1.5, borderColor: border }]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
 export default function Login() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  // Anonymous Supabase session for now — real Apple/Google/Facebook OAuth
-  // can link onto the same user later without losing their data.
-  const go = () => {
-    ensureSignedIn(); // no-op offline; root layout hydrate also covers this
-    router.push('/onboarding-sport');
+  const logIn = useStore((s) => s.logIn);
+  const continueAsGuest = useStore((s) => s.continueAsGuest);
+
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!identifier.trim() || !password) {
+      setError('מלא אימייל/שם משתמש וסיסמה');
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    const res = await logIn(identifier, password);
+    setBusy(false);
+    if (res.ok) router.replace('/map');
+    else setError(res.error ?? 'ההתחברות נכשלה');
   };
+
+  const guest = async () => {
+    setBusy(true);
+    await continueAsGuest();
+    setBusy(false);
+    router.replace('/onboarding-sport');
+  };
+
   return (
     <LinearGradient
       colors={['#FFC46B', '#FF9D52', '#F7B573', '#F7EFDE', '#F7EFDE']}
@@ -58,34 +70,62 @@ export default function Login() {
       style={{ flex: 1 }}
     >
       <SeaHorizon />
-      {/* brand */}
-      <View style={{ flex: 1, alignItems: 'center', paddingTop: insets.top + 92 }}>
-        <Txt style={{ fontFamily: fonts.displayBold, fontSize: 96, lineHeight: 88, color: colors.ink }}>מקאסה</Txt>
-        <Txt style={{ fontSize: 16, fontFamily: fonts.semibold, color: colors.ink, marginTop: 6 }}>
+      <View style={{ flex: 1, alignItems: 'center', paddingTop: insets.top + 70 }}>
+        <Txt style={{ fontFamily: fonts.displayBold, fontSize: 84, lineHeight: 78, color: colors.ink }}>מקאסה</Txt>
+        <Txt style={{ fontSize: 15, fontFamily: fonts.semibold, color: colors.ink, marginTop: 6 }}>
           המעגל הבא שלך כבר על החול
         </Txt>
       </View>
-      {/* login sheet */}
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 30 }]}>
-        <Txt style={{ fontFamily: fonts.display, fontSize: 32, color: colors.petrol, textAlign: 'center', lineHeight: 34 }}>
-          שניות ואתה בפנים
+
+      <View style={[styles.sheet, { paddingBottom: insets.bottom + 26 }]}>
+        <Txt style={{ fontFamily: fonts.displayBold, fontSize: 34, color: colors.petrol, textAlign: 'center', lineHeight: 36 }}>
+          התחברות
         </Txt>
-        <SsoButton bg={colors.ink} onPress={go}>
-          <AppleGlyph size={18} color="#fff" />
-          <Txt style={styles.ssoTxt}>המשך עם Apple</Txt>
-        </SsoButton>
-        <SsoButton bg="#fff" border="rgba(18,48,58,.16)" onPress={go}>
-          <GoogleGlyph size={19} />
-          <Txt style={[styles.ssoTxt, { color: colors.ink }]}>המשך עם Google</Txt>
-        </SsoButton>
-        <SsoButton bg={colors.facebook} onPress={go}>
-          <FacebookGlyph size={19} color="#fff" />
-          <Txt style={styles.ssoTxt}>המשך עם Facebook</Txt>
-        </SsoButton>
-        <Txt style={{ textAlign: 'center', fontSize: 11.5, color: colors.faint, marginTop: 6 }}>
-          בהמשך אתה מאשר את <Txt style={{ textDecorationLine: 'underline', fontSize: 11.5, color: colors.faint }}>תנאי השימוש</Txt> ואת{' '}
-          <Txt style={{ textDecorationLine: 'underline', fontSize: 11.5, color: colors.faint }}>מדיניות הפרטיות</Txt>
-        </Txt>
+
+        <View style={styles.inputWrap}>
+          <TextInput
+            value={identifier}
+            onChangeText={setIdentifier}
+            placeholder="אימייל או שם משתמש"
+            placeholderTextColor={colors.faint}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            style={styles.input}
+          />
+        </View>
+        <View style={styles.inputWrap}>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="סיסמה"
+            placeholderTextColor={colors.faint}
+            secureTextEntry
+            autoCapitalize="none"
+            style={styles.input}
+            onSubmitEditing={submit}
+            returnKeyType="go"
+          />
+        </View>
+
+        {error ? <Txt style={styles.error}>{error}</Txt> : null}
+
+        <Button label="התחבר" size="lg" loading={busy} onPress={submit} style={{ marginTop: 2 }} />
+
+        <View style={styles.linkRow}>
+          <Txt style={styles.muted}>אין לך חשבון?</Txt>
+          <Pressable onPress={() => router.push('/signup')}>
+            <Txt style={styles.link}>הרשמה</Txt>
+          </Pressable>
+        </View>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.divLine} />
+          <Txt style={styles.divTxt}>או</Txt>
+          <View style={styles.divLine} />
+        </View>
+
+        <Button label="המשך כאורח" variant="secondary" size="md" onPress={guest} />
       </View>
     </LinearGradient>
   );
@@ -98,20 +138,28 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 34,
     borderTopRightRadius: 34,
     paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingTop: 26,
     gap: 12,
     shadowColor: '#12303A',
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.12,
     shadowRadius: 30,
   },
-  sso: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
+  inputWrap: {
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: colors.card,
+    borderWidth: 1.5,
+    borderColor: colors.hairlineStrong,
+    paddingHorizontal: 20,
     justifyContent: 'center',
-    gap: 12,
-    height: 56,
-    borderRadius: 28,
   },
-  ssoTxt: { fontSize: 16, fontFamily: fonts.semibold, color: '#fff' },
+  input: { fontSize: 15, color: colors.ink, fontFamily: fonts.body, textAlign: 'right', writingDirection: 'rtl' },
+  error: { color: colors.danger, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center' },
+  linkRow: { flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  muted: { fontSize: 13.5, color: colors.muted, fontFamily: fonts.medium },
+  link: { fontSize: 13.5, color: colors.petrol, fontFamily: fonts.bold, textDecorationLine: 'underline' },
+  dividerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
+  divLine: { flex: 1, height: 1, backgroundColor: colors.hairlineStrong },
+  divTxt: { fontSize: 12, color: colors.faint, fontFamily: fonts.medium },
 });

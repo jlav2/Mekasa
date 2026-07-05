@@ -115,18 +115,105 @@ const warn = (op: string) => (e: unknown) => console.warn(`[backend] ${op} faile
 
 // ---- auth ----
 
-// Anonymous session for now — the SSO buttons will layer real OAuth on top
-// later (Supabase links anonymous users to a provider without losing data).
-export async function ensureSignedIn(): Promise<string | null> {
+export async function sessionInfo(): Promise<{ id: string; isAnonymous: boolean } | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  const u = data.session?.user;
+  if (!u) return null;
+  return { id: u.id, isAnonymous: !!u.is_anonymous };
+}
+
+// Guest access — anonymous session so RLS-scoped browsing works without an account.
+export async function signInGuest(): Promise<string | null> {
   if (!supabase) return null;
   const { data } = await supabase.auth.getSession();
   if (data.session) return data.session.user.id;
   const { data: signIn, error } = await supabase.auth.signInAnonymously();
   if (error) {
-    warn('ensureSignedIn')(error);
+    warn('signInGuest')(error);
     return null;
   }
   return signIn.user?.id ?? null;
+}
+
+export type AuthResult = { ok: boolean; error?: string; userId?: string; needsConfirmation?: boolean };
+
+export async function usernameAvailable(username: string): Promise<boolean> {
+  if (!supabase) return true;
+  const { data, error } = await supabase.rpc('username_available', { u: username });
+  if (error) {
+    warn('usernameAvailable')(error);
+    return true; // don't block signup on a check failure; unique constraint backstops
+  }
+  return data === true;
+}
+
+export async function signUpEmail(
+  email: string,
+  password: string,
+  name: string,
+  username: string,
+): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name, username } },
+  });
+  if (error) return { ok: false, error: error.message };
+  // No session back → email confirmation is enabled; caller routes to OTP entry.
+  return { ok: true, userId: data.user?.id, needsConfirmation: !data.session };
+}
+
+// 6-digit code from the confirmation email (in-app, no magic-link app hopping).
+export async function verifyEmailOtp(email: string, token: string): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, userId: data.user?.id };
+}
+
+// Log in with email OR username (+ password). Username resolves to its email.
+export async function signInPassword(identifier: string, password: string): Promise<AuthResult> {
+  if (!supabase) return { ok: false, error: 'לא מחובר לשרת' };
+  let email = identifier.trim();
+  if (!email.includes('@')) {
+    const { data, error } = await supabase.rpc('email_for_username', { u: email });
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: 'שם משתמש לא נמצא' };
+    email = data as string;
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, userId: data.user?.id };
+}
+
+export async function signOut(): Promise<void> {
+  if (!supabase) return;
+  await supabase.auth.signOut().catch(warn('signOut'));
+}
+
+export async function fetchProfile(userId: string): Promise<{
+  name: string;
+  username?: string;
+  isPro: boolean;
+  sports?: SportProfile[];
+  homeBeaches?: string[];
+} | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('name, username, is_pro, sports, home_beaches')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return {
+    name: data.name,
+    username: data.username ?? undefined,
+    isPro: data.is_pro,
+    sports: data.sports ?? undefined,
+    homeBeaches: data.home_beaches ?? undefined,
+  };
 }
 
 export function upsertProfile(p: {
@@ -135,6 +222,7 @@ export function upsertProfile(p: {
   avatarInitial: string;
   avatarColor: string;
   isPro: boolean;
+  username?: string;
   sports?: SportProfile[];
   homeBeaches?: string[];
 }) {
@@ -146,6 +234,7 @@ export function upsertProfile(p: {
     avatar_color: p.avatarColor,
     is_pro: p.isPro,
   };
+  if (p.username !== undefined) row.username = p.username;
   if (p.sports !== undefined) row.sports = p.sports;
   if (p.homeBeaches !== undefined) row.home_beaches = p.homeBeaches;
   supabase

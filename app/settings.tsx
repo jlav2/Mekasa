@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Txt, Toggle, Icon } from '../src/components';
 import { colors, fonts, proGradient } from '../src/theme';
+import { useStore } from '../src/store';
 
 function ToggleRow({
   title,
@@ -40,6 +41,12 @@ function NavRow({ label, danger, last, onPress }: { label: string; danger?: bool
 
 export default function Settings() {
   const router = useRouter();
+  const logOut = useStore((s) => s.logOut);
+
+  const onLogout = async () => {
+    await logOut();
+    router.replace('/login');
+  };
 
   return (
     <Screen scroll contentStyle={{ paddingBottom: 60 }}>
@@ -75,7 +82,7 @@ export default function Settings() {
           <ToggleRow title="מיקום מדויק" sub="כבוי = אחרים רואים רק את החוף, לא אותך" value={false} />
           <NavRow label="הרמה שלי — עדכן ענפים ורמות" />
           <NavRow label="נהל מנוי Pro" onPress={() => router.push('/paywall')} />
-          <NavRow label="התנתק" danger last />
+          <NavRow label="התנתק" danger last onPress={onLogout} />
         </View>
 
         <Txt style={styles.sectionLabel}>פיתוח</Txt>
