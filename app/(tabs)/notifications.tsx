@@ -95,9 +95,15 @@ export default function Notifications() {
           </View>
         </View>
 
-        {/* joined your circle — swipe to mark read */}
+        {/* joined your circle — tap opens the circle, swipe marks read */}
         <SwipeToRead enabled={!!unread('n2')} onRead={() => markRead('n2')}>
-          <View style={styles.plainCard}>
+          <Pressable
+            style={styles.plainCard}
+            onPress={() => {
+              markRead('n2');
+              router.push({ pathname: '/c/[id]', params: { id: 'own-gordon' } });
+            }}
+          >
             <View style={[styles.avatarCircle, { backgroundColor: colors.live }]}>
               <Txt style={{ fontFamily: fonts.bold, fontSize: 17, color: '#fff' }}>ד</Txt>
             </View>
@@ -106,7 +112,7 @@ export default function Notifications() {
               <Txt style={styles.rowMeta}>אלטינה · חוף גורדון · לפני 18 דק'</Txt>
             </View>
             {unread('n2') && <Animated.View exiting={ZoomOut.duration(200)} style={styles.unreadDot} />}
-          </View>
+          </Pressable>
         </SwipeToRead>
 
         <SectionLabel style={{ marginTop: 6 }}>היום</SectionLabel>
@@ -125,8 +131,11 @@ export default function Notifications() {
           <Icon name="chevronLeft" size={14} color="#B9C4C9" strokeWidth={2} />
         </Pressable>
 
-        {/* closed-game summary */}
-        <View style={[styles.plainCard, { opacity: 0.75 }]}>
+        {/* closed-game summary — taps through to the circle */}
+        <Pressable
+          style={[styles.plainCard, { opacity: 0.75 }]}
+          onPress={() => router.push({ pathname: '/c/[id]', params: { id: 'frishman' } })}
+        >
           <View style={styles.summaryIconWrap}>
             <Svg width={20} height={20} viewBox="0 0 24 24">
               <Circle cx="12" cy="12" r="8" fill="none" stroke={colors.muted} strokeWidth={2} strokeDasharray="18 4 14 4" strokeLinecap="round" />
@@ -137,7 +146,7 @@ export default function Notifications() {
             <Txt style={styles.rowTitle}>המעגל של אתמול נסגר — 2.5 שעות משחק</Txt>
             <Txt style={styles.rowMeta}>חוף פרישמן · שיחקת עם 5 שחקנים</Txt>
           </View>
-        </View>
+        </Pressable>
 
         {/* pro upsell */}
         <View style={styles.proCard}>

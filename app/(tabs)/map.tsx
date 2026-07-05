@@ -20,10 +20,28 @@ function Dot({ color }: { color: string }) {
   return <View style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: color }} />;
 }
 
+const SPORT_LABEL: Record<string, string> = {
+  all: 'כל הענפים',
+  footvolley: "פוצ'יוולי",
+  altinha: 'אלטינה',
+  volleyball: 'כדורעף',
+};
+
 export default function Map() {
   const router = useRouter();
   const circles = useStore((s) => s.circles);
-  const markers = useMemo(() => markersFromCircles(circles), [circles]);
+  const filter = useStore((s) => s.filter);
+  const cycleFilter = useStore((s) => s.cycleFilter);
+  const filtered = useMemo(
+    () =>
+      circles.filter(
+        (c) =>
+          (filter.sport === 'all' || c.sport === filter.sport) &&
+          (filter.level === 'all' || c.levelLabel === filter.level),
+      ),
+    [circles, filter],
+  );
+  const markers = useMemo(() => markersFromCircles(filtered), [filtered]);
   const nearest = useStore((s) => s.circles.find((c) => c.id === 'frishman'))!;
   const joined = useStore((s) => s.isJoined('frishman'));
   const joinCircle = useStore((s) => s.joinCircle);
@@ -48,16 +66,18 @@ export default function Map() {
         <View style={styles.filters} pointerEvents="box-none">
           <View style={styles.filterRow}>
             <Chip
-              label="כל הענפים"
-              active
-              onPress={() => {}}
-              trailing={<Icon name="chevronDown" size={11} color="#fff" />}
+              label={SPORT_LABEL[filter.sport]}
+              active={filter.sport !== 'all'}
+              onPress={() => cycleFilter('sport')}
+              trailing={<Icon name="chevronDown" size={11} color={filter.sport !== 'all' ? '#fff' : colors.muted} />}
+              style={filter.sport === 'all' ? styles.chipBlur : undefined}
             />
             <Chip
-              label="בינוניים"
-              onPress={() => {}}
-              trailing={<Icon name="chevronDown" size={11} color={colors.muted} />}
-              style={styles.chipBlur}
+              label={filter.level === 'all' ? 'כל הרמות' : filter.level}
+              active={filter.level !== 'all'}
+              onPress={() => cycleFilter('level')}
+              trailing={<Icon name="chevronDown" size={11} color={filter.level !== 'all' ? '#fff' : colors.muted} />}
+              style={filter.level === 'all' ? styles.chipBlur : undefined}
             />
             <Chip
               label='עד 2 ק"מ'

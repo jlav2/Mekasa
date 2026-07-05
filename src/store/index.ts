@@ -16,7 +16,7 @@ import {
   upsertProfile,
 } from '../data/backend';
 import { BEACH_OPTIONS, distanceLabelFrom, type BeachOption } from '../data/beaches';
-import type { Sport } from '../data/models';
+import type { Sport, SportProfile } from '../data/models';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 export type CreateCircleInput = {
@@ -29,6 +29,12 @@ export type CreateCircleInput = {
   isOpen: boolean;
 };
 
+export type MapFilter = { sport: Sport | 'all'; level: string | 'all' };
+
+// Cycle orders for the two functional map chips
+export const SPORT_CYCLE: (Sport | 'all')[] = ['all', 'footvolley', 'altinha', 'volleyball'];
+export const LEVEL_CYCLE: (string | 'all')[] = ['all', 'מתחילים', 'בינוניים', 'מקצוענים'];
+
 type AppState = {
   user: User;
   circles: Circle[];
@@ -36,6 +42,7 @@ type AppState = {
   notifications: AppNotification[];
   live: boolean; // true once hydrated from Supabase
   draftBeach: BeachOption; // create-circle location choice (set by beach-picker)
+  filter: MapFilter; // map chip filters
 
   // derived helpers
   circleById: (id: string) => Circle | undefined;
@@ -46,6 +53,8 @@ type AppState = {
   // actions
   hydrate: () => Promise<void>;
   setDraftBeach: (beach: BeachOption) => void;
+  setSports: (sports: SportProfile[]) => void;
+  cycleFilter: (key: keyof MapFilter) => void;
   createCircle: (input: CreateCircleInput) => string;
   joinCircle: (circleId: string) => void;
   sendMessage: (circleId: string, text: string) => void;
@@ -67,6 +76,7 @@ export const useStore = create<AppState>((set, get) => ({
   notifications: NOTIFICATIONS,
   live: false,
   draftBeach: BEACH_OPTIONS[0],
+  filter: { sport: 'all', level: 'all' },
 
   circleById: (id) => get().circles.find((c) => c.id === id),
   messagesFor: (circleId) => get().messages.filter((m) => m.circleId === circleId),
@@ -132,6 +142,30 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setDraftBeach: (beach) => set({ draftBeach: beach }),
+
+  cycleFilter: (key) =>
+    set((s) => {
+      const cycle = key === 'sport' ? SPORT_CYCLE : LEVEL_CYCLE;
+      const i = cycle.indexOf(s.filter[key] as never);
+      const next = cycle[(i + 1) % cycle.length];
+      return { filter: { ...s.filter, [key]: next } };
+    }),
+
+  setSports: (sports) => {
+    const user = { ...get().user, sports };
+    set({ user });
+    if (get().live) {
+      upsertProfile({
+        userId: user.id,
+        name: user.name,
+        avatarInitial: user.avatarInitial,
+        avatarColor: user.avatarColor,
+        isPro: user.isPro,
+        sports,
+        homeBeaches: user.homeBeaches,
+      });
+    }
+  },
 
   createCircle: (input) => {
     const { user, draftBeach } = get();

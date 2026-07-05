@@ -11,6 +11,8 @@ import {
   Icon,
 } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
+import { useStore } from '../src/store';
+import type { Level, Sport as SportKey } from '../src/data/models';
 
 type Sport = { key: string; name: string; sub: string; icon: 'footvolley' | 'altinha' | 'volleyball' };
 const SPORTS: Sport[] = [
@@ -23,8 +25,18 @@ export default function OnboardingSport() {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>(['footvolley', 'altinha']);
   const [level, setLevel] = useState(1);
+  const setSports = useStore((s) => s.setSports);
   const toggle = (k: string) =>
     setSelected((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]));
+
+  const proceed = () => {
+    // segmented index 0..2 → level 1..3
+    const lvl = (level + 1) as Level;
+    setSports(
+      selected.map((k) => ({ sport: k as SportKey, level: lvl, verifiedByPeers: false })),
+    );
+    router.replace('/onboarding-permissions');
+  };
 
   return (
     <Screen>
@@ -76,7 +88,7 @@ export default function OnboardingSport() {
         />
 
         <View style={{ marginTop: 'auto', paddingTop: 24 }}>
-          <Button label="יאללה, למפה" size="lg" onPress={() => router.replace('/onboarding-permissions')} />
+          <Button label="יאללה, למפה" size="lg" disabled={selected.length === 0} onPress={proceed} />
         </View>
       </View>
     </Screen>

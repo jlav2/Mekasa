@@ -3,7 +3,7 @@
 // source of truth for the UI; everything here is fire-and-forget with
 // console warnings on failure (offline demo keeps working).
 import { supabase } from '../lib/supabase';
-import type { AppNotification, ChatMessage, Circle, Player } from './models';
+import type { AppNotification, ChatMessage, Circle, Player, SportProfile } from './models';
 
 type CircleRow = {
   id: string;
@@ -129,20 +129,28 @@ export async function ensureSignedIn(): Promise<string | null> {
   return signIn.user?.id ?? null;
 }
 
-export function upsertProfile(p: { userId: string; name: string; avatarInitial: string; avatarColor: string; isPro: boolean }) {
+export function upsertProfile(p: {
+  userId: string;
+  name: string;
+  avatarInitial: string;
+  avatarColor: string;
+  isPro: boolean;
+  sports?: SportProfile[];
+  homeBeaches?: string[];
+}) {
   if (!supabase) return;
+  const row: Record<string, unknown> = {
+    user_id: p.userId,
+    name: p.name,
+    avatar_initial: p.avatarInitial,
+    avatar_color: p.avatarColor,
+    is_pro: p.isPro,
+  };
+  if (p.sports !== undefined) row.sports = p.sports;
+  if (p.homeBeaches !== undefined) row.home_beaches = p.homeBeaches;
   supabase
     .from('profiles')
-    .upsert(
-      {
-        user_id: p.userId,
-        name: p.name,
-        avatar_initial: p.avatarInitial,
-        avatar_color: p.avatarColor,
-        is_pro: p.isPro,
-      },
-      { onConflict: 'user_id' },
-    )
+    .upsert(row, { onConflict: 'user_id' })
     .then(({ error }) => error && warn('upsertProfile')(error));
 }
 

@@ -1,4 +1,6 @@
-import { View, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Platform, StyleSheet } from 'react-native';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import {
   Screen,
@@ -34,6 +36,30 @@ function NativeDialogMock() {
 
 export default function OnboardingPermissions() {
   const router = useRouter();
+  const [requesting, setRequesting] = useState(false);
+
+  // Ask for real foreground location, then continue regardless of the answer —
+  // the map still works with the demo location if permission is denied.
+  const allow = async () => {
+    setRequesting(true);
+    try {
+      if (Platform.OS !== 'web') {
+        await Location.requestForegroundPermissionsAsync();
+      } else if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        await new Promise<void>((resolve) =>
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(),
+            () => resolve(),
+            { timeout: 5000 },
+          ),
+        );
+      }
+    } catch {
+      // ignore — permission is optional for the demo
+    } finally {
+      router.push('/map');
+    }
+  };
 
   return (
     <Screen edges={{ top: true, bottom: true }} contentStyle={{ paddingTop: 30 }}>
@@ -65,7 +91,7 @@ export default function OnboardingPermissions() {
         <Toggle value onColor={colors.live} />
       </View>
 
-      <Button label="אפשר מיקום" size="lg" style={{ marginTop: 12 }} onPress={() => router.push('/map')} />
+      <Button label="אפשר מיקום" size="lg" loading={requesting} style={{ marginTop: 12 }} onPress={allow} />
     </Screen>
   );
 }

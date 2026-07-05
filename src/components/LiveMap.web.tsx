@@ -81,6 +81,7 @@ export function LiveMap({
 }: LiveMapProps) {
   const containerRef = useRef<any>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<Record<string, maplibregl.Marker>>({});
   const [markerEls, setMarkerEls] = useState<Record<string, HTMLElement>>({});
 
   useEffect(() => {
@@ -124,34 +125,41 @@ export function LiveMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      markersRef.current = {};
     };
     // map instance + user dot are static per screen — mount once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // circle markers — reconcile portal targets against the (live) markers prop,
-  // so circles created/removed after mount appear without a remount
+  // circle markers — reconcile maplibre Marker instances against the (live)
+  // markers prop, so circles added/removed/filtered after mount update without
+  // a remount. Diffing is imperative against markersRef (idempotent under React
+  // 19's double effect invocation); markerEls is a pure state set for the portals.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    setMarkerEls((prev) => {
-      const next: Record<string, HTMLElement> = {};
-      for (const m of markers) {
-        let el = prev[m.id];
-        if (!el) {
-          el = document.createElement('div');
-          el.style.zIndex = '2';
-          new maplibregl.Marker({ element: el, anchor: 'center' })
-            .setLngLat([m.lng, m.lat])
-            .addTo(map);
-        }
-        next[m.id] = el;
+    const existing = markersRef.current;
+    const wanted = new Set(markers.map((m) => m.id));
+    const nextEls: Record<string, HTMLElement> = {};
+    for (const m of markers) {
+      let marker = existing[m.id];
+      if (!marker) {
+        const el = document.createElement('div');
+        el.style.zIndex = '2';
+        marker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([m.lng, m.lat]).addTo(map);
+        existing[m.id] = marker;
+      } else {
+        marker.setLngLat([m.lng, m.lat]);
       }
-      for (const id of Object.keys(prev)) {
-        if (!next[id]) prev[id].parentElement?.remove(); // maplibre marker wrapper
+      nextEls[m.id] = marker.getElement();
+    }
+    for (const id of Object.keys(existing)) {
+      if (!wanted.has(id)) {
+        existing[id].remove();
+        delete existing[id];
       }
-      return next;
-    });
+    }
+    setMarkerEls(nextEls);
   }, [markers]);
 
   return (
