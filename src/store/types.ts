@@ -28,6 +28,7 @@ export type AppState = {
   circleById: (id: string) => Circle | undefined;
   messagesFor: (circleId: string) => ChatMessage[];
   isJoined: (circleId: string) => boolean;
+  isWaitlisted: (circleId: string) => boolean;
   unreadCount: () => number;
 
   // auth
@@ -57,6 +58,8 @@ export type AppState = {
   createCircle: (input: CreateCircleInput) => string;
   joinCircle: (circleId: string) => void;
   leaveCircle: (circleId: string) => void;
+  joinWaitlist: (circleId: string) => void;
+  leaveWaitlist: (circleId: string) => void;
   sendMessage: (circleId: string, text: string) => void;
   markAllRead: () => void;
   markRead: (id: string) => void;

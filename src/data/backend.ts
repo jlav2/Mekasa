@@ -27,6 +27,7 @@ type CircleRow = {
   lat: number;
   lng: number;
   players?: PlayerRow[];
+  waitlist?: WaitlistRow[];
 };
 
 type PlayerRow = {
@@ -37,6 +38,16 @@ type PlayerRow = {
   avatar_initial: string;
   avatar_color: string;
   position: number;
+};
+
+type WaitlistRow = {
+  id: string;
+  circle_id: string;
+  user_id: string;
+  name: string;
+  avatar_initial: string;
+  avatar_color: string;
+  created_at: string;
 };
 
 type MessageRow = {
@@ -70,6 +81,13 @@ const toPlayer = (r: PlayerRow): Player => ({
   avatarColor: r.avatar_color,
 });
 
+const toWaitlistPlayer = (r: WaitlistRow): Player => ({
+  id: r.user_id,
+  name: r.name,
+  avatarInitial: r.avatar_initial,
+  avatarColor: r.avatar_color,
+});
+
 const toCircle = (r: CircleRow): Circle => ({
   id: r.id,
   sport: r.sport,
@@ -80,7 +98,10 @@ const toCircle = (r: CircleRow): Circle => ({
   levelLabel: r.level_label,
   capacity: r.capacity,
   players: (r.players ?? []).sort((a, b) => a.position - b.position).map(toPlayer),
-  waitlist: [],
+  waitlist: (r.waitlist ?? [])
+    .slice()
+    .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+    .map(toWaitlistPlayer),
   state: r.state,
   isOpen: r.is_open,
   hostId: r.host_id,
@@ -347,7 +368,7 @@ export async function fetchAll(): Promise<{
 } | null> {
   if (!supabase) return null;
   const [circles, messages, notifications] = await Promise.all([
-    supabase.from('circles').select('*, players(*)').order('created_at'),
+    supabase.from('circles').select('*, players(*), waitlist(*)').order('created_at'),
     supabase.from('messages').select('*').order('created_at'),
     supabase.from('notifications').select('*').order('created_at'),
   ]);
@@ -367,6 +388,8 @@ export async function fetchAll(): Promise<{
 export function subscribeRealtime(handlers: {
   onPlayerInsert: (circleId: string, player: Player) => void;
   onPlayerRemove: (circleId: string, userId: string) => void;
+  onWaitlistInsert: (circleId: string, player: Player) => void;
+  onWaitlistRemove: (circleId: string, userId: string) => void;
   onCircleInsert: (circle: Circle) => void;
   onCircleUpdate: (circle: Partial<Circle> & { id: string }) => void;
   onCircleRemove: (id: string) => void;
@@ -388,6 +411,17 @@ export function subscribeRealtime(handlers: {
       if (id) {
         const sep = id.indexOf(':');
         handlers.onPlayerRemove(id.slice(0, sep), id.slice(sep + 1));
+      }
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'waitlist' }, (p) => {
+      const r = p.new as WaitlistRow;
+      handlers.onWaitlistInsert(r.circle_id, toWaitlistPlayer(r));
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'waitlist' }, (p) => {
+      const id = (p.old as Partial<WaitlistRow>).id;
+      if (id) {
+        const sep = id.indexOf(':');
+        handlers.onWaitlistRemove(id.slice(0, sep), id.slice(sep + 1));
       }
     })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'circles' }, (p) => {
@@ -522,6 +556,32 @@ export function pushLeave(circleId: string, userId: string) {
     .delete()
     .eq('id', `${circleId}:${userId}`)
     .then(({ error }) => error && warn('pushLeave')(error));
+}
+
+export function pushJoinWaitlist(circleId: string, player: Player) {
+  const sb = supabase;
+  if (!sb) return;
+  sb
+    .from('waitlist')
+    .insert({
+      id: `${circleId}:${player.id}`,
+      circle_id: circleId,
+      user_id: player.id,
+      name: player.name,
+      avatar_initial: player.avatarInitial,
+      avatar_color: player.avatarColor,
+    })
+    .then(({ error }) => error && warn('pushJoinWaitlist')(error));
+}
+
+export function pushLeaveWaitlist(circleId: string, userId: string) {
+  const sb = supabase;
+  if (!sb) return;
+  sb
+    .from('waitlist')
+    .delete()
+    .eq('id', `${circleId}:${userId}`)
+    .then(({ error }) => error && warn('pushLeaveWaitlist')(error));
 }
 
 export function pushMarkRead(ids: string[]) {

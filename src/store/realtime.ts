@@ -122,6 +122,20 @@ function subscribeAll(set: Set) {
           return { ...c, players, state: players.length >= c.capacity ? 'live' : c.state };
         }),
       })),
+    onWaitlistInsert: (circleId, player) =>
+      set((s) => ({
+        circles: s.circles.map((c) =>
+          c.id === circleId && !c.waitlist.some((p) => p.id === player.id)
+            ? { ...c, waitlist: [...c.waitlist, player] }
+            : c,
+        ),
+      })),
+    onWaitlistRemove: (circleId, userId) =>
+      set((s) => ({
+        circles: s.circles.map((c) =>
+          c.id === circleId ? { ...c, waitlist: c.waitlist.filter((p) => p.id !== userId) } : c,
+        ),
+      })),
     onCircleUpdate: (patch) =>
       set((s) => ({
         circles: s.circles.map((c) => (c.id === patch.id ? { ...c, ...patch } : c)),

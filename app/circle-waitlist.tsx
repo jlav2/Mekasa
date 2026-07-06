@@ -1,20 +1,40 @@
 import { View, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path as SvgPath } from 'react-native-svg';
-import { Screen, Txt, Icon, DecorRing, HeroIconButton, RingBadge, StatusDot } from '../src/components';
+import { Screen, Txt, Icon, DecorRing, HeroIconButton, RingBadge, StatusDot, Button } from '../src/components';
 import { colors, fonts } from '../src/theme';
+import { useStore } from '../src/store';
 
-type Player = { letter: string; name: string; color: string };
-
-const PLAYERS: Player[] = [
-  { letter: 'נ', name: 'נועה', color: colors.amber },
-  { letter: 'ע', name: 'עומר', color: colors.petrol },
-  { letter: 'ד', name: 'דניאל', color: colors.live },
-  { letter: 'ר', name: 'רועי', color: '#7A6FB8' },
-];
+const ordinal = (n: number) =>
+  n === 1 ? 'ראשון' : n === 2 ? 'שני' : n === 3 ? 'שלישי' : `מספר ${n}`;
 
 export default function CircleWaitlist() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const circle = useStore((s) => (id ? s.circleById(id) : undefined));
+  const userId = useStore((s) => s.user.id);
+  const leaveWaitlist = useStore((s) => s.leaveWaitlist);
+  // one real nearby alternative: a circle that still needs a player
+  const alt = useStore((s) => s.circles.find((c) => c.state === 'missing' && c.id !== id));
+
+  if (!circle) {
+    return (
+      <Screen bg={colors.sandBg} edges={{ top: true, bottom: true }}>
+        <View style={styles.notFound}>
+          <Txt style={styles.notFoundTitle}>המעגל לא נמצא</Txt>
+          <Button label="למפה" variant="petrol" size="md" style={{ marginTop: 18, minWidth: 160 }} onPress={() => router.replace('/map')} />
+        </View>
+      </Screen>
+    );
+  }
+
+  const myIndex = circle.waitlist.findIndex((p) => p.id === userId);
+  const onWaitlist = myIndex >= 0;
+
+  const leave = () => {
+    leaveWaitlist(circle.id);
+    router.back();
+  };
 
   return (
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }}>
@@ -22,34 +42,29 @@ export default function CircleWaitlist() {
       <View style={styles.hero}>
         <DecorRing style={{ left: -70, top: -40 }} />
         <View style={styles.heroTopRow}>
-          <HeroIconButton onPress={() => router.back()}>
+          <HeroIconButton onPress={() => router.back()} accessibilityLabel="חזור">
             <Icon name="chevronRight" size={17} color="#fff" strokeWidth={2.4} />
           </HeroIconButton>
-          <HeroIconButton>
-            <Svg width={16} height={16} viewBox="0 0 20 20">
-              <SvgPath
-                d="M14 7a3 3 0 10-2.8-4M14 7a3 3 0 01.9 5.9M6 13a3 3 0 102.8 4M6 13a3 3 0 01-.9-5.9M12 5L8 8m4 7l-4-3"
-                fill="none"
-                stroke="#fff"
-                strokeWidth={1.7}
-                strokeLinecap="round"
-              />
-            </Svg>
+          <HeroIconButton
+            accessibilityLabel="שתף מעגל"
+            onPress={() => router.push({ pathname: '/circle-share', params: { id: circle.id } })}
+          >
+            <Icon name="share" size={16} color="#fff" strokeWidth={1.8} />
           </HeroIconButton>
         </View>
 
         <View style={styles.badgeRow}>
           <View style={styles.liveBadge}>
             <StatusDot color="#fff" size={7} />
-            <Txt style={styles.liveBadgeTxt}>משחק חי · מלא</Txt>
+            <Txt style={styles.liveBadgeTxt}>{circle.state === 'live' ? 'משחק חי · מלא' : 'מלא'}</Txt>
           </View>
           <View style={styles.softBadge}>
-            <Txt style={styles.softBadgeTxt}>פוצ&apos;יוולי · בינוניים</Txt>
+            <Txt style={styles.softBadgeTxt}>{circle.sportLabel} · {circle.levelLabel}</Txt>
           </View>
         </View>
 
-        <Txt style={styles.heroTitle}>המעגל של נועה{'\n'}חוף גורדון</Txt>
-        <Txt style={styles.heroMeta}>התחיל לפני 40 דק&apos; · ליד המים · 650 מ&apos; ממך</Txt>
+        <Txt style={styles.heroTitle}>המעגל של {circle.hostName}{'\n'}{circle.beachName}</Txt>
+        <Txt style={styles.heroMeta}>{circle.startLabel} · {circle.court} · {circle.distanceLabel}</Txt>
       </View>
 
       {/* body */}
@@ -57,15 +72,15 @@ export default function CircleWaitlist() {
         <View>
           <View style={styles.playersHeader}>
             <Txt style={styles.playersTitle}>שחקנים במעגל</Txt>
-            <Txt style={styles.playersCountFull}>4/4 — מלא</Txt>
+            <Txt style={styles.playersCountFull}>{circle.players.length}/{circle.capacity} — מלא</Txt>
           </View>
           <View style={styles.playersRow}>
-            {PLAYERS.map((p) => (
-              <View key={p.letter} style={styles.playerCol}>
-                <View style={[styles.playerAvatar, { backgroundColor: p.color }]}>
-                  <Txt style={styles.playerAvatarTxt}>{p.letter}</Txt>
+            {circle.players.map((p) => (
+              <View key={p.id} style={styles.playerCol}>
+                <View style={[styles.playerAvatar, { backgroundColor: p.avatarColor }]}>
+                  <Txt style={styles.playerAvatarTxt}>{p.avatarInitial}</Txt>
                 </View>
-                <Txt style={styles.playerName}>{p.name}</Txt>
+                <Txt style={styles.playerName} numberOfLines={1}>{p.name}</Txt>
               </View>
             ))}
           </View>
@@ -78,37 +93,51 @@ export default function CircleWaitlist() {
               <Icon name="bell" size={20} color={colors.live} strokeWidth={2} />
             </View>
             <View style={{ flex: 1 }}>
-              <Txt style={styles.waitlistTitle}>אתה ראשון בהמתנה</Txt>
-              <Txt style={styles.waitlistRule}>אם מישהו עוזב — תקבל התראה מיידית ו־5 דק&apos; לתפוס</Txt>
+              <Txt style={styles.waitlistTitle}>
+                {onWaitlist
+                  ? myIndex === 0
+                    ? 'אתה ראשון בהמתנה'
+                    : `אתה ${ordinal(myIndex + 1)} בהמתנה`
+                  : `${circle.waitlist.length} בהמתנה`}
+              </Txt>
+              <Txt style={styles.waitlistRule}>אם מישהו עוזב — תקבל התראה מיידית ו־5 דק' לתפוס</Txt>
             </View>
           </View>
-          <View style={styles.waitlistConfirmedBtn}>
-            <Txt style={styles.waitlistConfirmedTxt}>ברשימת ההמתנה ✓</Txt>
-          </View>
+          {onWaitlist ? (
+            <Pressable style={styles.leaveBtn} onPress={leave} accessibilityRole="button">
+              <Txt style={styles.leaveTxt}>צא מרשימת ההמתנה</Txt>
+            </Pressable>
+          ) : (
+            <View style={styles.waitlistConfirmedBtn}>
+              <Txt style={styles.waitlistConfirmedTxt}>ברשימת ההמתנה ✓</Txt>
+            </View>
+          )}
         </View>
 
-        {/* alternatives */}
-        <View>
-          <Txt style={styles.altHeader}>בינתיים, ממש קרוב:</Txt>
-          <Pressable style={styles.altRow} onPress={() => router.push('/c/frishman')}>
-            <RingBadge size={42} color={colors.sunset} rotate={40}>
-              <Txt style={styles.altCountTxt}>3/4</Txt>
-            </RingBadge>
-            <View style={{ flex: 1 }}>
-              <Txt style={styles.altTitle}>פוצ&apos;יוולי · חוף פרישמן</Txt>
-              <Txt style={styles.altMeta}>חסר שחקן · אותה רמה · 300 מ&apos;</Txt>
-            </View>
-            <View style={styles.altJoinBtn}>
-              <Txt style={styles.altJoinTxt}>הצטרף</Txt>
-            </View>
-          </Pressable>
-        </View>
+        {/* one real nearby alternative */}
+        {alt ? (
+          <View>
+            <Txt style={styles.altHeader}>בינתיים, ממש קרוב:</Txt>
+            <Pressable style={styles.altRow} onPress={() => router.push({ pathname: '/c/[id]', params: { id: alt.id } })}>
+              <RingBadge size={42} color={colors.sunset} rotate={40}>
+                <Txt style={styles.altCountTxt}>{alt.players.length}/{alt.capacity}</Txt>
+              </RingBadge>
+              <View style={{ flex: 1 }}>
+                <Txt style={styles.altTitle}>{alt.sportLabel} · {alt.beachName}</Txt>
+                <Txt style={styles.altMeta}>חסר שחקן · {alt.levelLabel} · {alt.distanceLabel}</Txt>
+              </View>
+              <View style={styles.altJoinBtn}>
+                <Txt style={styles.altJoinTxt}>הצטרף</Txt>
+              </View>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       {/* footer */}
       <View style={styles.footer}>
-        <Pressable style={styles.footerBtn} onPress={() => router.push('/chat')}>
-          <Txt style={styles.footerBtnTxt}>צפה במשחק · פתח צ&apos;אט</Txt>
+        <Pressable style={styles.footerBtn} onPress={() => router.push({ pathname: '/chat', params: { circle: circle.id } })}>
+          <Txt style={styles.footerBtnTxt}>צפה במשחק · פתח צ'אט</Txt>
         </Pressable>
       </View>
     </Screen>
@@ -149,8 +178,8 @@ const styles = StyleSheet.create({
   playersHeader: { flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'space-between' },
   playersTitle: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.ink },
   playersCountFull: { fontFamily: fonts.bold, fontSize: 13, color: colors.live },
-  playersRow: { flexDirection: 'row-reverse', gap: 14, marginTop: 12 },
-  playerCol: { alignItems: 'center', gap: 6 },
+  playersRow: { flexDirection: 'row-reverse', gap: 14, marginTop: 12, flexWrap: 'wrap' },
+  playerCol: { alignItems: 'center', gap: 6, width: 58 },
   playerAvatar: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },
   playerAvatarTxt: { fontFamily: fonts.bold, fontSize: 19, color: '#fff' },
   playerName: { fontSize: 11, fontFamily: fonts.bold, color: colors.ink },
@@ -187,6 +216,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   waitlistConfirmedTxt: { fontSize: 14.5, fontFamily: fonts.bold, color: '#fff' },
+  leaveBtn: {
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.5,
+    borderColor: colors.outline,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  leaveTxt: { fontSize: 14, fontFamily: fonts.bold, color: colors.petrol },
   altHeader: { fontSize: 13, fontFamily: fonts.extrabold, color: colors.ink },
   altRow: {
     flexDirection: 'row-reverse',
@@ -222,4 +261,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footerBtnTxt: { fontSize: 14.5, fontFamily: fonts.bold, color: colors.petrol },
+  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  notFoundTitle: { fontFamily: fonts.displayBold, fontSize: 36, color: colors.petrol },
 });

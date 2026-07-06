@@ -52,6 +52,8 @@ export default function CircleDetail() {
   const joined = useStore((s) => s.isJoined(id ?? ''));
   const joinCircle = useStore((s) => s.joinCircle);
   const leaveCircle = useStore((s) => s.leaveCircle);
+  const joinWaitlist = useStore((s) => s.joinWaitlist);
+  const waitlisted = useStore((s) => s.isWaitlisted(id ?? ''));
   const userId = useStore((s) => s.user.id);
 
   if (!circle) return <NotFound />;
@@ -86,9 +88,14 @@ export default function CircleDetail() {
 
   const openChat = () => router.push({ pathname: '/chat', params: { circle: circle.id } });
 
+  const waitlistRoute = () => router.push({ pathname: '/circle-waitlist', params: { id: circle.id } });
+
   const onJoin = () => {
     if (joined) return openChat();
-    if (full) return router.push('/circle-waitlist');
+    if (full) {
+      if (!waitlisted) joinWaitlist(circle.id);
+      return waitlistRoute();
+    }
     joinCircle(circle.id);
     openChat();
   };
@@ -222,7 +229,13 @@ export default function CircleDetail() {
           onPress={onJoin}
         >
           <Txt style={styles.ctaTxt}>
-            {joined ? 'אתה בפנים ✓ — פתח צ׳אט' : full ? 'המעגל מלא — לרשימת ההמתנה' : 'אני בפנים'}
+            {joined
+              ? 'אתה בפנים ✓ — פתח צ׳אט'
+              : full
+                ? waitlisted
+                  ? 'ברשימת ההמתנה ✓ — צפה'
+                  : 'המעגל מלא — לרשימת ההמתנה'
+                : 'אני בפנים'}
           </Txt>
         </Pressable>
         <Pressable style={styles.shareBtn} onPress={openChat}>

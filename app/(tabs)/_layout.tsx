@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { Txt, Icon } from '../../src/components';
+import { Txt, Icon, OfflineBanner } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
 import { useStore } from '../../src/store';
 
@@ -109,15 +109,18 @@ function PillTabBar({ state, navigation }: PillTabBarProps) {
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      tabBar={(props) => <PillTabBar {...props} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.sandBg } }}
-    >
-      <Tabs.Screen name="map" />
-      <Tabs.Screen name="my-circles" />
-      <Tabs.Screen name="notifications" />
-      <Tabs.Screen name="profile" />
-    </Tabs>
+    <View style={{ flex: 1 }}>
+      <Tabs
+        tabBar={(props) => <PillTabBar {...props} />}
+        screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.sandBg } }}
+      >
+        <Tabs.Screen name="map" />
+        <Tabs.Screen name="my-circles" />
+        <Tabs.Screen name="notifications" />
+        <Tabs.Screen name="profile" />
+      </Tabs>
+      <OfflineBanner />
+    </View>
   );
 }
 

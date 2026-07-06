@@ -1,13 +1,23 @@
 import { CIRCLES } from '../../data/fixtures';
 import { BEACH_OPTIONS, distanceLabelFrom } from '../../data/beaches';
-import { pushCreateCircle, pushJoin, pushLeave } from '../../data/backend';
+import { pushCreateCircle, pushJoin, pushLeave, pushJoinWaitlist, pushLeaveWaitlist } from '../../data/backend';
 import type { ChatMessage, Circle, Player } from '../../data/models';
 import { nowTime } from '../helpers';
 import type { AppState, Set, Get } from '../types';
 
 type CirclesSlice = Pick<
   AppState,
-  'circles' | 'draftBeach' | 'circleById' | 'isJoined' | 'setDraftBeach' | 'createCircle' | 'joinCircle' | 'leaveCircle'
+  | 'circles'
+  | 'draftBeach'
+  | 'circleById'
+  | 'isJoined'
+  | 'isWaitlisted'
+  | 'setDraftBeach'
+  | 'createCircle'
+  | 'joinCircle'
+  | 'leaveCircle'
+  | 'joinWaitlist'
+  | 'leaveWaitlist'
 >;
 
 export const createCirclesSlice = (set: Set, get: Get): CirclesSlice => ({
@@ -20,6 +30,12 @@ export const createCirclesSlice = (set: Set, get: Get): CirclesSlice => ({
     return !!get()
       .circleById(circleId)
       ?.players.some((p) => p.id === user.id);
+  },
+  isWaitlisted: (circleId) => {
+    const { user } = get();
+    return !!get()
+      .circleById(circleId)
+      ?.waitlist.some((p) => p.id === user.id);
   },
 
   setDraftBeach: (beach) => set({ draftBeach: beach }),
@@ -154,5 +170,37 @@ export const createCirclesSlice = (set: Set, get: Get): CirclesSlice => ({
       circles: circles.map((c) => (c.id === circleId ? { ...c, players, state } : c)),
     });
     if (get().live) pushLeave(circleId, user.id);
+  },
+
+  joinWaitlist: (circleId) => {
+    const { user, circles } = get();
+    const circle = circles.find((c) => c.id === circleId);
+    if (!circle) return;
+    if (circle.players.some((p) => p.id === user.id)) return; // already playing
+    if (circle.waitlist.some((p) => p.id === user.id)) return; // already waiting
+    const me: Player = {
+      id: user.id,
+      name: user.name,
+      avatarInitial: user.avatarInitial,
+      avatarColor: user.avatarColor,
+    };
+    set({
+      circles: circles.map((c) =>
+        c.id === circleId ? { ...c, waitlist: [...c.waitlist, me] } : c,
+      ),
+    });
+    if (get().live) pushJoinWaitlist(circleId, me);
+  },
+
+  leaveWaitlist: (circleId) => {
+    const { user, circles } = get();
+    const circle = circles.find((c) => c.id === circleId);
+    if (!circle || !circle.waitlist.some((p) => p.id === user.id)) return;
+    set({
+      circles: circles.map((c) =>
+        c.id === circleId ? { ...c, waitlist: c.waitlist.filter((p) => p.id !== user.id) } : c,
+      ),
+    });
+    if (get().live) pushLeaveWaitlist(circleId, user.id);
   },
 });

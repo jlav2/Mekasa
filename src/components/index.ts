@@ -6,6 +6,7 @@ export * from './Button';
 export * from './icons';
 export * from './ui';
 export * from './TabBar';
+export * from './OfflineBanner';
 export * from './MapCanvas';
 export * from './MapMarker';
 export * from './LiveMap';
