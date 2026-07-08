@@ -13,6 +13,17 @@ npx expo start       # then press i (iOS sim), a (Android), or w (web)
 
 The app opens on **Login (1a)** and flows like the real product: login → sport/level → permissions → map → circles → chat, with the tab bar connecting map / my-circles / notifications / profile.
 
+## Tests
+
+```bash
+npm test              # store unit tests (Jest) — fast, offline, no live dependency
+npm run security-check # live RLS/trigger regression check against the linked Supabase project (opt-in)
+```
+
+`npm test` covers `src/store/**` — auth identity/no-fixture-leak, join/leave/waitlist optimism + rollback, realtime merge idempotency, filter cycling — with the Supabase boundary (`src/data/backend`, `src/lib/supabase`) swapped for manual mocks (`__mocks__/`), so it never touches the network.
+
+`npm run security-check` re-runs (as an anonymous attacker) the server-side checks a unit test can't reach: `is_pro` self-grant, cross-user profile reads, notification/chat-sender forging, join-impersonation, and the login-resolver rate limit. It creates real anonymous users on the linked project and cleans them up via the Supabase CLI afterward — run it deliberately, not in a tight loop (the rate-limit check consumes real per-IP budget).
+
 ## Backend (Supabase, optional)
 
 Without configuration the app runs in offline demo mode (in-memory fixtures, resets on reload). To go live:
