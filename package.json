@@ -37,6 +37,7 @@
     "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
     "@types/react-dom": "^19.2.3",
+    "husky": "^9.1.7",
     "jest": "~29.7.0",
     "jest-expo": "~57.0.1",
     "opentype.js": "^2.0.0",
@@ -50,7 +51,9 @@
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watchAll",
-    "security-check": "node scripts/security-check.mjs"
+    "typecheck": "tsc --noEmit",
+    "security-check": "node scripts/security-check.mjs",
+    "prepare": "husky"
   },
   "private": true,
   "jest": {
