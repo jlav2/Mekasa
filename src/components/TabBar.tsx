@@ -1,4 +1,4 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { Platform, View, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle } from 'react-native-svg';
@@ -53,7 +53,7 @@ export function TabBar({ active }: { active: TabKey }) {
           return (
             <Pressable
               key={t.key}
-              style={styles.tab}
+              style={[styles.tab, Platform.OS === 'web' && { cursor: 'pointer' }]}
               onPress={() => !isActive && router.replace(t.route as any)}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}

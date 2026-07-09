@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import {
+  Platform,
   View,
   Pressable,
   StyleSheet,
@@ -121,6 +122,7 @@ export function Chip({
         active
           ? { backgroundColor: filledColor }
           : { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.hairlineStrong },
+        Platform.OS === 'web' && { cursor: 'pointer' },
         style,
       ]}
     >
@@ -316,6 +318,7 @@ export function SegmentedControl({
             style={[
               styles.segmentItem,
               active && { backgroundColor: activeColor, ...shadows.card },
+              Platform.OS === 'web' && { cursor: 'pointer' },
             ]}
           >
             <Txt style={{ fontFamily: active ? fonts.extrabold : fonts.semibold, fontSize: 13.5, color: active ? '#fff' : colors.muted }}>
@@ -403,7 +406,13 @@ export function Divider({ style }: { style?: ViewStyle }) {
 /* ---------------- Row (RTL list row) ---------------- */
 export function Row({ children, style, gap = 12, onPress }: { children: ReactNode; style?: ViewStyle; gap?: number; onPress?: () => void }) {
   const content = <View style={[{ flexDirection: 'row-reverse', alignItems: 'center', gap }, style]}>{children}</View>;
-  return onPress ? <Pressable onPress={onPress}>{content}</Pressable> : content;
+  return onPress ? (
+    <Pressable onPress={onPress} style={Platform.OS === 'web' && { cursor: 'pointer' }}>
+      {content}
+    </Pressable>
+  ) : (
+    content
+  );
 }
 
 /* ---------------- HeroIconButton (translucent round button on petrol heroes) ---------------- */
@@ -434,6 +443,7 @@ export function HeroIconButton({
           alignItems: 'center',
           justifyContent: 'center',
         },
+        Platform.OS === 'web' && { cursor: 'pointer' },
         style,
       ]}
     >

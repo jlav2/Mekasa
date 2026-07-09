@@ -1,4 +1,4 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { Platform, View, Pressable, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
@@ -63,7 +63,7 @@ function PillTabBar({ state, navigation }: PillTabBarProps) {
           return (
             <Pressable
               key={route.key}
-              style={styles.tab}
+              style={[styles.tab, Platform.OS === 'web' && { cursor: 'pointer' }]}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={meta.label}

@@ -4,7 +4,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { createPortal } from 'react-dom';
-import maplibregl from 'maplibre-gl';
+// Type-only: erased at compile time, so this does NOT pull the ~200KB+
+// maplibre-gl runtime into the initial bundle. The real module is loaded
+// lazily via dynamic import() on mount, below.
+import type MapLibreGL from 'maplibre-gl';
 import { MapMarker } from './MapMarker';
 import { colors } from '../theme';
 import { TLV_COAST, USER_LOCATION, CIRCLE_MARKERS } from '../data/beaches';
@@ -17,6 +20,8 @@ const MAPLIBRE_CSS = `
 .maplibregl-map{overflow:hidden;font:inherit}
 .maplibregl-canvas-container,.maplibregl-canvas{position:absolute;left:0;top:0}
 .maplibregl-canvas{outline:none}
+.maplibregl-canvas-container{cursor:grab}
+.maplibregl-canvas-container:active{cursor:grabbing}
 .maplibregl-marker{position:absolute;top:0;left:0;will-change:transform}
 .maplibregl-ctrl-attrib{position:absolute;bottom:0;left:0;font:10px/1.4 Heebo,sans-serif;color:#8A9AA2;background:rgba(255,253,246,.7);padding:1px 6px;border-radius:0 6px 0 0}
 .maplibregl-ctrl-attrib a{color:#8A9AA2;text-decoration:none}
@@ -31,7 +36,7 @@ function injectCss() {
 }
 
 // Recolor the basemap to the design palette.
-function applyPalette(map: maplibregl.Map) {
+function applyPalette(map: MapLibreGL.Map) {
   const style = map.getStyle();
   if (!style?.layers) return;
   for (const layer of style.layers) {
@@ -80,52 +85,62 @@ export function LiveMap({
   children,
 }: LiveMapProps) {
   const containerRef = useRef<any>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<Record<string, maplibregl.Marker>>({});
+  const glRef = useRef<typeof MapLibreGL | null>(null);
+  const mapRef = useRef<MapLibreGL.Map | null>(null);
+  const markersRef = useRef<Record<string, MapLibreGL.Marker>>({});
   const [markerEls, setMarkerEls] = useState<Record<string, HTMLElement>>({});
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const node: HTMLElement | null = containerRef.current as any;
     if (!node) return;
-    injectCss();
-    // pin the container inline — inline styles win over any stylesheet order
-    Object.assign(node.style, { position: 'absolute', top: '0', left: '0', right: '0', bottom: '0' });
+    let cancelled = false;
 
-    const map = new maplibregl.Map({
-      container: node,
-      style: BASE_STYLE,
-      center: [TLV_COAST.longitude, TLV_COAST.latitude],
-      zoom: 13.6,
-      attributionControl: { compact: true } as any,
-      interactive,
-      dragRotate: false,
-      pitchWithRotate: false,
+    import('maplibre-gl').then(({ default: maplibregl }) => {
+      if (cancelled) return;
+      glRef.current = maplibregl;
+      injectCss();
+      // pin the container inline — inline styles win over any stylesheet order
+      Object.assign(node.style, { position: 'absolute', top: '0', left: '0', right: '0', bottom: '0' });
+
+      const map = new maplibregl.Map({
+        container: node,
+        style: BASE_STYLE,
+        center: [TLV_COAST.longitude, TLV_COAST.latitude],
+        zoom: 13.6,
+        attributionControl: { compact: true } as any,
+        interactive,
+        dragRotate: false,
+        pitchWithRotate: false,
+      });
+      mapRef.current = map;
+      setReady(true);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) (window as any).__mekasaMap = map;
+      // 'style.load' fires as soon as the style JSON is parsed (the 'load' event
+      // can be held up indefinitely by pending resources); 'idle' is the safety net.
+      // once-only: the base style is set at mount and never swapped, so the palette
+      // only needs applying a single time (whichever of these fires first).
+      const restyle = () => applyPalette(map);
+      map.once('style.load', restyle);
+      map.once('idle', restyle);
+      if (map.isStyleLoaded()) restyle();
+
+      // user dot
+      if (showUser) {
+        const u = document.createElement('div');
+        u.style.cssText =
+          'width:18px;height:18px;border-radius:50%;background:' +
+          colors.gpsBlue +
+          ';border:3px solid #fff;box-shadow:0 2px 6px rgba(18,48,58,.25);z-index:1';
+        new maplibregl.Marker({ element: u, anchor: 'center' })
+          .setLngLat([USER_LOCATION.lng, USER_LOCATION.lat])
+          .addTo(map);
+      }
     });
-    mapRef.current = map;
-    if (typeof __DEV__ !== 'undefined' && __DEV__) (window as any).__mekasaMap = map;
-    // 'style.load' fires as soon as the style JSON is parsed (the 'load' event
-    // can be held up indefinitely by pending resources); 'idle' is the safety net.
-    // once-only: the base style is set at mount and never swapped, so the palette
-    // only needs applying a single time (whichever of these fires first).
-    const restyle = () => applyPalette(map);
-    map.once('style.load', restyle);
-    map.once('idle', restyle);
-    if (map.isStyleLoaded()) restyle();
-
-    // user dot
-    if (showUser) {
-      const u = document.createElement('div');
-      u.style.cssText =
-        'width:18px;height:18px;border-radius:50%;background:' +
-        colors.gpsBlue +
-        ';border:3px solid #fff;box-shadow:0 2px 6px rgba(18,48,58,.25);z-index:1';
-      new maplibregl.Marker({ element: u, anchor: 'center' })
-        .setLngLat([USER_LOCATION.lng, USER_LOCATION.lat])
-        .addTo(map);
-    }
 
     return () => {
-      map.remove();
+      cancelled = true;
+      mapRef.current?.remove();
       mapRef.current = null;
       markersRef.current = {};
     };
@@ -139,7 +154,8 @@ export function LiveMap({
   // 19's double effect invocation); markerEls is a pure state set for the portals.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const maplibregl = glRef.current;
+    if (!map || !maplibregl) return;
     const existing = markersRef.current;
     const wanted = new Set(markers.map((m) => m.id));
     const nextEls: Record<string, HTMLElement> = {};
@@ -162,7 +178,7 @@ export function LiveMap({
       }
     }
     setMarkerEls(nextEls);
-  }, [markers]);
+  }, [markers, ready]);
 
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.sandMap }, style]}>

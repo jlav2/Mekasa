@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
 import {
+  Platform,
   Pressable,
   View,
   StyleSheet,
@@ -80,12 +81,15 @@ export function Button({
   const h = heights[size];
   const glow = variant === 'primary' ? shadows.cta : undefined;
   const [pressed, setPressed] = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
     <AnimatedPressable
       onPress={onPress}
       disabled={disabled || loading}
       onPressIn={() => setPressed(true)}
       onPressOut={() => setPressed(false)}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
       style={[
         styles.base,
         { height: h, borderRadius: h / 2 },
@@ -94,10 +98,11 @@ export function Button({
         glow,
         {
           transform: [{ scale: pressed ? 0.97 : 1 }],
-          opacity: disabled ? 0.5 : pressed ? 0.9 : 1,
+          opacity: disabled ? 0.5 : pressed ? 0.9 : hovered ? 0.92 : 1,
           transitionProperty: ['transform', 'opacity'],
           transitionDuration: 90,
         },
+        Platform.OS === 'web' && { cursor: disabled || loading ? 'default' : 'pointer' },
         style,
       ]}
     >

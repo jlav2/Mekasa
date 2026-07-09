@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { ReactNode, useEffect } from 'react';
+import { Platform, View, useWindowDimensions } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,10 +18,27 @@ import {
   Karantina_400Regular,
   Karantina_700Bold,
 } from '@expo-google-fonts/karantina';
-import { colors } from '../src/theme';
+import { colors, shadows } from '../src/theme';
 import { useStore } from '../src/store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Centers the app in a phone-width column on wide browser windows instead of
+// stretching the mobile layout edge-to-edge; no-op on native.
+const WEB_SHELL_MAX_WIDTH = 480;
+
+function WebShell({ children }: { children: ReactNode }) {
+  if (Platform.OS !== 'web') return <>{children}</>;
+  const { width } = useWindowDimensions();
+  const isWide = width > WEB_SHELL_MAX_WIDTH;
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.petrolDeep, alignItems: 'center' }}>
+      <View style={[{ flex: 1, width: '100%', maxWidth: WEB_SHELL_MAX_WIDTH }, isWide && shadows.card]}>
+        {children}
+      </View>
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -45,19 +63,21 @@ export default function RootLayout() {
     useStore.getState().hydrate();
   }, []);
 
-  if (!loaded && !error) return null;
+  if (!loaded && !error) return <View style={{ flex: 1, backgroundColor: colors.sandBg }} />;
 
   return (
     <GestureHandlerRootView>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.sandBg },
-            animation: 'slide_from_left', // RTL-forward feel
-          }}
-        />
+        <WebShell>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.sandBg },
+              animation: 'slide_from_left', // RTL-forward feel
+            }}
+          />
+        </WebShell>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
