@@ -1,5 +1,7 @@
 # MeKasa — React Native / Expo implementation
 
+[![CI](https://github.com/jlav2/Mekasa/actions/workflows/ci.yml/badge.svg)](https://github.com/jlav2/Mekasa/actions/workflows/ci.yml)
+
 Hebrew-first, RTL beach-sports social app (מקאסה). This is the runnable implementation of the design canvas in [`../MeKasa.dc.html`](../MeKasa.dc.html) — all **29 screen blocks** (1a–8e) recreated with Expo + expo-router.
 
 ## Run
