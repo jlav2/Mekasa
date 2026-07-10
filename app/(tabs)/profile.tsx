@@ -170,7 +170,7 @@ export default function Profile() {
           <Txt style={{ fontSize: 15, fontFamily: fonts.extrabold, color: '#fff' }}>
             {user.isPro ? 'MeKasa Pro פעיל' : 'שדרג ל־MeKasa Pro'}
           </Txt>
-          <Txt style={{ fontSize: 12, color: 'rgba(255,255,255,.65)', marginTop: 2 }}>
+          <Txt style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', marginTop: 2 }}>
             {user.isPro ? 'עוקב אחרי החופים החשובים לך · נהל מנוי' : 'עד 5 חופים במעקב · טורנירים · בלי הגבלה'}
           </Txt>
         </View>

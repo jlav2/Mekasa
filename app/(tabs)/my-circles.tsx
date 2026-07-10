@@ -14,13 +14,66 @@ import {
   DecorRing,
   RingBadge,
   Icon,
+  Skeleton,
 } from '../../src/components';
 import { colors, fonts } from '../../src/theme';
 import { useStore } from '../../src/store';
 import type { Circle } from '../../src/data/models';
 
+// 9b — shown while the store's first circles fetch is still in flight.
+function ListRowSkeleton({ opacity = 1 }: { opacity?: number }) {
+  return (
+    <View style={[styles.rowSkeleton, { opacity }]}>
+      <Skeleton width={48} height={48} radius={24} />
+      <View style={{ flex: 1, gap: 8 }}>
+        <Skeleton width={180} height={16} radius={6} delay={100} />
+        <Skeleton width={120} height={12} radius={6} delay={200} />
+      </View>
+    </View>
+  );
+}
+
+function MyCirclesSkeleton() {
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
+      <Screen contentStyle={{ paddingTop: 24 }}>
+        <Txt style={{ fontFamily: fonts.displayBold, fontSize: 56, lineHeight: 56, color: colors.petrol }}>
+          המעגלים שלי
+        </Txt>
+        <SegmentedControl options={['קרובים', 'קבועים', 'היסטוריה']} value={0} activeColor={colors.petrol} style={{ marginTop: 14 }} />
+
+        <Card floating radius={22} pad={16} style={{ marginTop: 16 }}>
+          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+            <Skeleton width={130} height={22} radius={11} />
+            <Skeleton width={70} height={12} radius={6} delay={100} />
+          </View>
+          <Skeleton width={220} height={26} radius={8} delay={200} style={{ marginTop: 12 }} />
+          <View style={{ flexDirection: 'row', marginTop: 12 }}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={{ marginRight: i === 0 ? 0 : -8 }}>
+                <Skeleton width={32} height={32} radius={16} delay={i * 150} style={{ borderWidth: 2, borderColor: colors.card }} />
+              </View>
+            ))}
+          </View>
+          <View style={{ flexDirection: 'row-reverse', gap: 8, marginTop: 14 }}>
+            <Skeleton width={100} height={44} radius={22} />
+            <View style={{ flex: 1, height: 44, borderRadius: 22, backgroundColor: 'rgba(14,79,94,.08)' }} />
+          </View>
+        </Card>
+
+        <View style={{ gap: 10, marginTop: 10 }}>
+          <ListRowSkeleton opacity={1} />
+          <ListRowSkeleton opacity={0.7} />
+          <ListRowSkeleton opacity={0.45} />
+        </View>
+      </Screen>
+    </View>
+  );
+}
+
 export default function MyCircles() {
   const router = useRouter();
+  const loading = useStore((s) => s.loading);
   const [tab, setTab] = useState(0);
   const user = useStore((s) => s.user);
   const circles = useStore((s) => s.circles);
@@ -40,6 +93,8 @@ export default function MyCircles() {
     else if (i === 2) router.replace('/history');
     else setTab(0);
   };
+
+  if (loading) return <MyCirclesSkeleton />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
@@ -139,7 +194,7 @@ function LiveCard({ circle, onChat, onOpen }: { circle: Circle; onChat: () => vo
           <StatusDot color="#fff" size={7} />
           <Txt style={{ color: '#fff', fontSize: 11.5, fontFamily: fonts.extrabold }}>משחק חי — אתה בפנים</Txt>
         </View>
-        <Txt style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,.6)', fontFamily: fonts.medium }}>
+        <Txt style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,.75)', fontFamily: fonts.medium }}>
           {circle.startLabel}
         </Txt>
       </View>
@@ -222,4 +277,14 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 6, opacity: 0.7 },
   summaryLine: { flex: 1, height: 1, backgroundColor: 'rgba(14,79,94,.14)' },
   empty: { alignItems: 'center', marginTop: 60, paddingHorizontal: 24 },
+  rowSkeleton: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    borderRadius: 18,
+    padding: 14,
+  },
 });

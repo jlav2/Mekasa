@@ -140,7 +140,7 @@ export default function Chat() {
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
         <DecorRing size={170} opacity={0.13} style={{ left: -50, top: -30 }} />
         <View style={styles.headerRow}>
-          <HeroIconButton size={36} onPress={() => router.back()} accessibilityLabel="חזור">
+          <HeroIconButton onPress={() => router.back()} accessibilityLabel="חזור">
             <Icon name="chevronRight" size={20} color="#fff" strokeWidth={2.4} />
           </HeroIconButton>
           <RingAvatar count={`${circle.players.length}/${circle.capacity}`} />
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontFamily: fonts.extrabold, fontSize: 16.5, color: '#fff' },
   headerSubRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 2 },
   liveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.live },
-  headerSub: { fontFamily: fonts.medium, fontSize: 12, color: 'rgba(255,255,255,.65)' },
+  headerSub: { fontFamily: fonts.medium, fontSize: 12, color: 'rgba(255,255,255,.75)' },
   pinBtn: {
     width: 36,
     height: 36,

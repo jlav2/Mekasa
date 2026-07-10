@@ -29,9 +29,17 @@ export function OfflineBanner() {
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
       <View style={styles.banner}>
-        <Icon name="bell" size={15} color="#fff" strokeWidth={2} />
-        <Txt style={styles.txt}>אין חיבור לשרת — מצב לא מקוון</Txt>
-        <Pressable onPress={retry} hitSlop={8} accessibilityRole="button" accessibilityLabel="נסה שוב">
+        <Icon name="wifiOff" size={16} color={colors.sandGlow} strokeWidth={2} />
+        <View style={{ flex: 1 }}>
+          <Txt style={styles.title}>אין חיבור לרשת</Txt>
+          <Txt style={styles.sub}>מציגים את מה ששמור אצלך</Txt>
+        </View>
+        <Pressable
+          onPress={retry}
+          style={styles.retryPill}
+          accessibilityRole="button"
+          accessibilityLabel="נסה שוב"
+        >
           <Txt style={styles.retry}>{retrying ? 'מתחבר…' : 'נסה שוב'}</Txt>
         </Pressable>
       </View>
@@ -44,13 +52,21 @@ const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     backgroundColor: colors.ink,
     borderRadius: 18,
     paddingVertical: 8,
     paddingHorizontal: 14,
     marginHorizontal: 14,
   },
-  txt: { color: '#fff', fontSize: 12.5, fontFamily: fonts.semibold, flexShrink: 1 },
-  retry: { color: colors.sandGlow, fontSize: 12.5, fontFamily: fonts.bold, textDecorationLine: 'underline' },
+  title: { color: '#fff', fontSize: 13.5, fontFamily: fonts.bold },
+  sub: { color: 'rgba(255,255,255,.75)', fontSize: 12, fontFamily: fonts.medium, marginTop: 1 },
+  retryPill: {
+    minHeight: 36,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,.14)',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+  },
+  retry: { color: colors.sandGlow, fontSize: 12.5, fontFamily: fonts.bold },
 });

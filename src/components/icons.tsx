@@ -42,7 +42,11 @@ export type IconName =
   | 'ball'
   | 'link'
   | 'sliders'
-  | 'x';
+  | 'x'
+  | 'wifiOff'
+  | 'locationOff'
+  | 'alertCircle'
+  | 'refresh';
 
 type IconProps = {
   name: IconName;
@@ -284,6 +288,39 @@ function render(name: IconName, c: any, color: string) {
         <>
           <Circle cx="12" cy="12" r="9" {...c} />
           <Path d="M12 3a9 9 0 0 0 0 18M3.5 9h17M3.5 15h17" {...c} />
+        </>
+      );
+    case 'wifiOff':
+      return (
+        <>
+          <Path d="M8.5 16.3a6 6 0 0 1 7 0" {...c} />
+          <Path d="M5 12.5a11 11 0 0 1 3.5-2.5" {...c} />
+          <Path d="M15.5 10a11 11 0 0 1 3.5 2.5" {...c} />
+          <Circle cx="12" cy="19.5" r="1" fill={color} stroke="none" />
+          <Line x1="3" y1="3" x2="21" y2="21" {...c} />
+        </>
+      );
+    case 'locationOff':
+      return (
+        <>
+          <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" {...c} />
+          <Circle cx="12" cy="10" r="3" {...c} />
+          <Line x1="3" y1="3" x2="21" y2="21" {...c} />
+        </>
+      );
+    case 'alertCircle':
+      return (
+        <>
+          <Circle cx="12" cy="12" r="9" {...c} />
+          <Line x1="12" y1="8" x2="12" y2="13" {...c} />
+          <Circle cx="12" cy="16.3" r="0.75" fill={color} stroke="none" />
+        </>
+      );
+    case 'refresh':
+      return (
+        <>
+          <Path d="M21 12a9 9 0 1 1-3-6.7" {...c} />
+          <Polyline points="21 3 21 9 15 9" {...c} />
         </>
       );
     default:

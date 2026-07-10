@@ -41,7 +41,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextField(
 const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
   label: { fontSize: 13, fontFamily: fonts.extrabold, color: colors.ink },
-  hint: { fontSize: 12, fontFamily: fonts.bold, color: colors.live },
+  hint: { fontSize: 12, fontFamily: fonts.bold, color: colors.liveDeep },
   wrap: {
     height: 54,
     borderRadius: 16,

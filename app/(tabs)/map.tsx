@@ -1,17 +1,21 @@
-import { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { AppState as RNAppState, Linking, Platform, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import * as Location from 'expo-location';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 import { markersFromCircles } from '../../src/data/beaches';
 import {
   LiveMap,
-    Card,
+  Card,
   Txt,
   Button,
   Chip,
   StatusDot,
   AvatarStack,
   Icon,
+  MapCanvas,
+  Skeleton,
 } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
 import { useStore, matchesLevel } from '../../src/store';
@@ -27,8 +31,144 @@ const SPORT_LABEL: Record<string, string> = {
   volleyball: 'כדורעף',
 };
 
+// Live permission status for the map tab — distinct from the one-shot
+// onboarding request, which fires once and never blocks. `unknown` (the
+// async check hasn't resolved yet) is treated like `granted` to avoid a
+// flash of the denied state on every mount.
+function useLocationPermission() {
+  const [denied, setDenied] = useState(false);
+
+  const check = async () => {
+    if (Platform.OS === 'web') return; // web geolocation handled separately in onboarding
+    const { status } = await Location.getForegroundPermissionsAsync();
+    setDenied(status === 'denied');
+  };
+
+  useEffect(() => {
+    check();
+    // Re-check on return from Settings (status can't be observed directly).
+    const sub = RNAppState.addEventListener('change', (next) => {
+      if (next === 'active') check();
+    });
+    return () => sub.remove();
+  }, []);
+
+  return denied;
+}
+
+function MapSpinner() {
+  const rotation = useSharedValue(0);
+  useEffect(() => {
+    rotation.value = withRepeat(withTiming(360, { duration: 1400, easing: Easing.linear }), -1, false);
+  }, [rotation]);
+  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));
+  return (
+    <Animated.View style={style}>
+      <Svg width={64} height={64} viewBox="0 0 64 64">
+        <Circle
+          cx={32}
+          cy={32}
+          r={26}
+          fill="none"
+          stroke={colors.petrol}
+          strokeWidth={4}
+          strokeDasharray="52 7 38 9 44 6"
+          strokeLinecap="round"
+          transform="rotate(-30 32 32)"
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// 9a — shown while the store's first circles fetch is still in flight.
+function MapLoadingSkeleton() {
+  return (
+    <View style={{ flex: 1 }}>
+      <MapCanvas style={{ opacity: 0.35 }} />
+      <View style={[styles.filters, { flexDirection: 'row-reverse', gap: 8 }]}>
+        <Skeleton width={118} height={44} radius={22} />
+        <Skeleton width={96} height={44} radius={22} delay={150} />
+        <Skeleton width={96} height={44} radius={22} delay={300} />
+      </View>
+      <View style={styles.spinnerWrap}>
+        <MapSpinner />
+        <View style={styles.spinnerPill}>
+          <Txt style={styles.spinnerTxt}>מאתר מעגלים סביבך…</Txt>
+        </View>
+      </View>
+      <View style={styles.card}>
+        <Card floating radius={24} pad={16}>
+          <Skeleton width={150} height={12} radius={6} />
+          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginTop: 12 }}>
+            <View style={{ flex: 1, gap: 8 }}>
+              <Skeleton width={210} height={24} radius={8} delay={100} />
+              <Skeleton width={160} height={12} radius={6} delay={200} />
+            </View>
+            <View style={{ flexDirection: 'row' }}>
+              {[0, 1, 2].map((i) => (
+                <View key={i} style={{ marginRight: i === 0 ? 0 : -10 }}>
+                  <Skeleton
+                    width={38}
+                    height={38}
+                    radius={19}
+                    delay={i * 150}
+                    style={{ borderWidth: 2, borderColor: colors.card }}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+          <View style={{ height: 56, borderRadius: 28, marginTop: 14, backgroundColor: 'rgba(255,107,44,.14)' }} />
+        </Card>
+      </View>
+    </View>
+  );
+}
+
+// 9d — the map tab's own location-permission-denied state (distinct from
+// the one-shot onboarding-permissions.tsx, which never blocks).
+function LocationDenied({ onChooseBeach }: { onChooseBeach: () => void }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <MapCanvas style={{ opacity: 0.4 }} />
+      <View style={styles.emptyWrap}>
+        <Card floating radius={28} pad={22} style={{ alignItems: 'center' }}>
+          <View style={styles.emptyIconRing}>
+            <Icon name="locationOff" size={34} color={colors.sunsetDeep} strokeWidth={1.8} />
+          </View>
+          <Txt style={styles.emptyTitle}>בלי מיקום — אין &quot;לידך&quot;</Txt>
+          <Txt style={styles.emptyBody}>
+            הרשאת המיקום כבויה, אז אי אפשר להראות מה קורה סביבך. אפשר להפעיל אותה בהגדרות — או פשוט לבחור חוף ידנית.
+          </Txt>
+          <Button
+            label="פתח הגדרות מיקום"
+            variant="primary"
+            size="lg"
+            style={{ marginTop: 18 }}
+            onPress={() => Linking.openSettings()}
+          />
+          <Button
+            label="בחר חוף ידנית"
+            variant="secondary"
+            size="md"
+            style={{ marginTop: 10 }}
+            onPress={onChooseBeach}
+          />
+          <View style={styles.footnoteRow}>
+            <Icon name="alertCircle" size={14} color={colors.faint} />
+            <Txt style={styles.footnoteTxt}>שחקנים אחרים רואים רק את החוף — אף פעם לא אותך</Txt>
+          </View>
+        </Card>
+      </View>
+    </View>
+  );
+}
+
 export default function Map() {
   const router = useRouter();
+  const loading = useStore((s) => s.loading);
+  const locationDenied = useLocationPermission();
   const circles = useStore((s) => s.circles);
   const filter = useStore((s) => s.filter);
   const cycleFilter = useStore((s) => s.cycleFilter);
@@ -61,6 +201,9 @@ export default function Map() {
     if (!joined) joinCircle(featured.id);
     router.push({ pathname: '/chat', params: { circle: featured.id } });
   };
+
+  if (loading) return <MapLoadingSkeleton />;
+  if (locationDenied) return <LocationDenied onChooseBeach={() => router.push('/beach-picker')} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
@@ -189,9 +332,62 @@ const styles = StyleSheet.create({
     bottom: 104,
   },
   statusRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
-  statusTxt: { fontFamily: fonts.bold, fontSize: 12.5, color: colors.sunset },
+  statusTxt: { fontFamily: fonts.bold, fontSize: 12.5, color: colors.sunsetDeep },
   nowTxt: { marginRight: 'auto', fontSize: 12, color: colors.faint },
   mainRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginTop: 10 },
   title: { fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 30, color: colors.ink },
   meta: { fontSize: 13, color: colors.muted, marginTop: 4 },
+  spinnerWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '38%',
+    alignItems: 'center',
+    gap: 14,
+  },
+  spinnerPill: {
+    backgroundColor: 'rgba(255,253,246,.92)',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    ...shadows.card,
+  },
+  spinnerTxt: { fontSize: 13.5, fontFamily: fonts.bold, color: colors.petrol },
+  emptyWrap: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    top: '20%',
+  },
+  emptyIconRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+    borderColor: 'rgba(201,186,155,.6)',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontFamily: fonts.displayBold,
+    fontSize: 30,
+    color: colors.ink,
+    textAlign: 'center',
+    marginTop: 14,
+  },
+  emptyBody: {
+    fontSize: 13.5,
+    color: colors.muted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 8,
+  },
+  footnoteRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+  },
+  footnoteTxt: { fontSize: 11.5, color: colors.faint, flexShrink: 1 },
 });

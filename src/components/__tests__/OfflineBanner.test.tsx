@@ -32,14 +32,14 @@ describe('OfflineBanner', () => {
   it('renders the banner when signed in but not live (hydrate failed/offline)', async () => {
     useStore.setState({ authKind: 'user', live: false });
     await render(<OfflineBanner />);
-    expect(screen.getByText('אין חיבור לשרת — מצב לא מקוון')).toBeTruthy();
+    expect(screen.getByText('אין חיבור לרשת')).toBeTruthy();
     expect(screen.getByText('נסה שוב')).toBeTruthy();
   });
 
   it('also renders for a guest identity that is not live', async () => {
     useStore.setState({ authKind: 'guest', live: false });
     await render(<OfflineBanner />);
-    expect(screen.getByText('אין חיבור לשרת — מצב לא מקוון')).toBeTruthy();
+    expect(screen.getByText('אין חיבור לרשת')).toBeTruthy();
   });
 
   it('calls hydrate() when the retry link is pressed', async () => {

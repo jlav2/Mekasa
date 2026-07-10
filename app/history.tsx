@@ -139,5 +139,5 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.ink },
   rowMeta: { fontSize: 12, color: colors.faint, marginTop: 1 },
   trophyBadge: { backgroundColor: 'rgba(232,161,60,.18)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  action: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.sunset },
+  action: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.sunsetDeep },
 });

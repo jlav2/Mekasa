@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: 22, paddingTop: 20, gap: 16 },
   playersHeader: { flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'space-between' },
   playersTitle: { fontFamily: fonts.extrabold, fontSize: 15, color: colors.ink },
-  playersCountFull: { fontFamily: fonts.bold, fontSize: 13, color: colors.live },
+  playersCountFull: { fontFamily: fonts.bold, fontSize: 13, color: colors.liveDeep },
   playersRow: { flexDirection: 'row-reverse', gap: 14, marginTop: 12, flexWrap: 'wrap' },
   playerCol: { alignItems: 'center', gap: 6, width: 58 },
   playerAvatar: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },

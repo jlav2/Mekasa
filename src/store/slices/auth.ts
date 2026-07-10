@@ -26,6 +26,7 @@ const SEED = {
   messages: CHAT_MESSAGES,
   notifications: NOTIFICATIONS,
   live: false as const,
+  loading: false as const,
   authKind: 'none' as const,
 };
 
@@ -34,6 +35,10 @@ type AuthSlice = Pick<
   | 'user'
   | 'authKind'
   | 'live'
+  | 'loading'
+  | 'toast'
+  | 'showToast'
+  | 'clearToast'
   | 'hydrate'
   | 'continueAsGuest'
   | 'signUpEmail'
@@ -54,14 +59,23 @@ export const createAuthSlice = (set: Set, get: Get): AuthSlice => ({
   user: CURRENT_USER,
   authKind: 'none',
   live: false,
+  loading: true,
+  toast: null,
 
   hydrate: async () => {
-    if (!isSupabaseConfigured || get().live) return;
+    if (!isSupabaseConfigured || get().live) {
+      set({ loading: false });
+      return;
+    }
     // Only go live if a session already exists (returning user / guest).
     // New visitors land on /login; auth actions establish the session.
     const info = await sessionInfo();
     if (info) await goLive(set, get, info.id, info.isAnonymous ? 'guest' : 'user');
+    else set({ loading: false });
   },
+
+  showToast: (toast) => set({ toast }),
+  clearToast: () => set({ toast: null }),
 
   continueAsGuest: async () => {
     const uid = await signInGuest();

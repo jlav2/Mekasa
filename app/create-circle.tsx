@@ -11,6 +11,7 @@ import {
   Stepper,
   Toggle,
   Button,
+  HeroIconButton,
 } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 import { useStore } from '../src/store';
@@ -52,9 +53,9 @@ export default function CreateCircle() {
     <Screen bg={colors.sandBg} contentStyle={{ paddingTop: 70, paddingBottom: 40, flexGrow: 1 }}>
       <View style={styles.titleRow}>
         <Txt style={styles.title}>פותחים מעגל</Txt>
-        <Pressable style={styles.closeBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="סגור">
+        <HeroIconButton variant="card" onPress={() => router.back()} accessibilityLabel="סגור">
           <Icon name="close" size={13} color={colors.muted} strokeWidth={2} />
-        </Pressable>
+        </HeroIconButton>
       </View>
       <Txt style={styles.helper}>מי שבסביבה יקבל התראה ברגע שתפתח</Txt>
 
@@ -145,14 +146,6 @@ export default function CreateCircle() {
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: fonts.displayBold, fontSize: 52, lineHeight: 52, color: colors.petrol },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(14,79,94,.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   helper: { fontSize: 13.5, color: colors.muted, marginTop: 4 },
   sectionLabel: { fontSize: 13.5, fontFamily: fonts.extrabold, color: colors.ink, marginTop: 20 },
   sportsRow: { flexDirection: 'row-reverse', gap: 8, marginTop: 8 },

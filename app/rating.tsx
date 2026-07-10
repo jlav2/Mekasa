@@ -173,7 +173,14 @@ export default function Rating() {
           {/* no-show */}
           <Pressable
             onPress={() => setNoShow((v) => !v)}
-            style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginTop: 14, paddingHorizontal: 4 }}
+            style={{
+              flexDirection: 'row-reverse',
+              alignItems: 'center',
+              gap: 10,
+              minHeight: 44,
+              marginTop: 14,
+              paddingHorizontal: 4,
+            }}
           >
             <View
               style={[
@@ -231,16 +238,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   levelChip: {
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1.5,
-    borderRadius: 14,
+    borderRadius: 22,
     paddingHorizontal: 12,
-    paddingVertical: 6,
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 7,
     borderWidth: 1.5,
-    borderColor: 'rgba(14,79,94,.3)',
+    borderColor: 'rgba(14,79,94,.35)',
   },
 });

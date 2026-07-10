@@ -78,7 +78,7 @@ export default function CircleShare() {
                     {missing <= 0 ? 'מלא' : missing === 1 ? 'חסר 1' : `חסרים ${missing}`}
                   </Txt>
                 </View>
-                <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.6)' }}>{link}</Txt>
+                <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.75)' }}>{link}</Txt>
               </View>
               <Txt style={{ fontFamily: fonts.displayBold, fontSize: 30, lineHeight: 30, color: '#fff', marginTop: 8 }}>
                 {circle ? `${circle.sportLabel} · ${circle.beachName} · ${circle.startLabel}` : ''}

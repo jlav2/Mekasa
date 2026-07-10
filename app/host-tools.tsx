@@ -1,7 +1,7 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { Screen, Txt, Avatar, Icon } from '../src/components';
+import { Screen, Txt, Avatar, Icon, HeroIconButton } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 
 type Requester = {
@@ -41,9 +41,9 @@ export default function HostTools() {
     <Screen padded={false} edges={{ top: true, bottom: true }} bg={colors.sandBg}>
       {/* header */}
       <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+        <HeroIconButton variant="card" onPress={() => router.back()}>
           <Icon name="chevronRight" size={18} color={colors.petrol} strokeWidth={2.4} />
-        </Pressable>
+        </HeroIconButton>
         <View style={{ flex: 1 }}>
           <Txt style={{ fontFamily: fonts.displayBold, fontSize: 40, lineHeight: 40, color: colors.petrol }}>
             המעגל שלך
@@ -59,7 +59,7 @@ export default function HostTools() {
 
       <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16, gap: 10 }}>
         {/* pending requests */}
-        <Txt style={{ fontSize: 12, fontFamily: fonts.extrabold, color: colors.sunset, letterSpacing: 0.5, paddingRight: 6 }}>
+        <Txt style={{ fontSize: 12, fontFamily: fonts.extrabold, color: colors.sunsetDeep, letterSpacing: 0.5, paddingRight: 6 }}>
           2 בקשות הצטרפות
         </Txt>
         <View style={styles.pendingCard}>
@@ -137,14 +137,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 22,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   hostBadge: {
     backgroundColor: 'rgba(255,107,44,.12)',

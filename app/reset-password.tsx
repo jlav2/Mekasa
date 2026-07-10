@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, TextInput, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Screen, Txt, Button, Icon, DecorRing, TextField } from '../src/components';
+import { Screen, Txt, Button, Icon, DecorRing, TextField, HeroIconButton } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 
@@ -30,9 +30,9 @@ export default function ResetPassword() {
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }} keyboardAvoiding>
       <View style={styles.hero}>
         <DecorRing style={{ left: -70, top: -40 }} />
-        <Pressable style={styles.back} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="חזור">
+        <HeroIconButton variant="translucent" onPress={() => router.back()} accessibilityLabel="חזור">
           <Icon name="chevronRight" size={18} color="#fff" strokeWidth={2.4} />
-        </Pressable>
+        </HeroIconButton>
         <Txt style={styles.title}>סיסמה{'\n'}חדשה</Txt>
         <Txt style={styles.sub}>הזן את הקוד ששלחנו אל{'\n'}{email}</Txt>
       </View>
@@ -70,7 +70,6 @@ export default function ResetPassword() {
 
 const styles = StyleSheet.create({
   hero: { backgroundColor: colors.petrol, paddingTop: 70, paddingHorizontal: 22, paddingBottom: 28, overflow: 'hidden' },
-  back: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,.14)', alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: fonts.displayBold, fontSize: 48, lineHeight: 46, color: '#fff', marginTop: 14 },
   sub: { fontSize: 13.5, color: 'rgba(255,255,255,.75)', marginTop: 10, lineHeight: 20 },
   body: { flex: 1, paddingHorizontal: 22, paddingTop: 26, gap: 12 },

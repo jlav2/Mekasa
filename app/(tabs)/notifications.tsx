@@ -6,7 +6,7 @@ import Animated, { ZoomOut, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Txt, Icon, SectionLabel, DecorRing, RingBadge } from '../../src/components';
+import { Txt, Icon, SectionLabel, DecorRing, RingBadge, StatusDot, Button } from '../../src/components';
 import { colors, fonts } from '../../src/theme';
 import { useStore } from '../../src/store';
 import type { AppNotification } from '../../src/data/models';
@@ -54,6 +54,7 @@ export default function Notifications() {
   const markAllRead = useStore((s) => s.markAllRead);
   const markRead = useStore((s) => s.markRead);
   const joinCircle = useStore((s) => s.joinCircle);
+  const showToast = useStore((s) => s.showToast);
 
   const openCircle = (n: AppNotification) => {
     markRead(n.id);
@@ -91,6 +92,13 @@ export default function Notifications() {
             onPress={() => {
               markRead(n.id);
               if (n.circleId) {
+                const target = circleById(n.circleId);
+                // the circle may have filled between the notification firing
+                // and this tap — surface the race instead of joining silently
+                if (target && target.players.length >= target.capacity) {
+                  showToast({ kind: 'joinRace', circleId: n.circleId });
+                  return;
+                }
                 joinCircle(n.circleId); // one-tap join, straight from the notification
                 router.push({ pathname: '/chat', params: { circle: n.circleId } });
               } else {
@@ -201,7 +209,26 @@ export default function Notifications() {
         showsVerticalScrollIndicator={false}
       >
         {notifications.length === 0 && (
-          <Txt style={styles.emptyTxt}>שקט על החול — אין התראות חדשות</Txt>
+          <View style={styles.empty}>
+            <View style={styles.emptyIconRing}>
+              <Icon name="bell" size={30} color={colors.muted} strokeWidth={1.8} />
+              <View style={styles.emptyLiveDot}>
+                <StatusDot color={colors.live} size={9} />
+              </View>
+            </View>
+            <Txt style={styles.emptyTitle}>שקט על החול</Txt>
+            <Txt style={styles.emptyBody}>
+              אין התראות חדשות. עקוב אחרי החופים שלך — וברגע שנפתח שם מעגל, תדע ראשון.
+            </Txt>
+            <Button
+              label="בחר חופים למעקב"
+              variant="secondary"
+              size="md"
+              style={{ marginTop: 16, alignSelf: 'center', paddingHorizontal: 24 }}
+              full={false}
+              onPress={() => router.push('/beach-picker')}
+            />
+          </View>
         )}
 
         {now.length > 0 && <SectionLabel>עכשיו</SectionLabel>}
@@ -237,7 +264,24 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 
-  emptyTxt: { fontFamily: fonts.medium, fontSize: 13.5, color: colors.faint, textAlign: 'center', marginTop: 40 },
+  empty: { alignItems: 'center', paddingHorizontal: 24, marginTop: 50 },
+  emptyIconRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(201,186,155,.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyLiveDot: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+  },
+  emptyTitle: { fontFamily: fonts.displayBold, fontSize: 32, color: colors.ink, marginTop: 16, textAlign: 'center' },
+  emptyBody: { fontFamily: fonts.medium, fontSize: 13.5, color: colors.muted, textAlign: 'center', marginTop: 8, lineHeight: 20 },
 
   hotCard: {
     backgroundColor: colors.card,
@@ -337,7 +381,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   proTitle: { fontFamily: fonts.extrabold, fontSize: 13.5, color: '#fff' },
-  proSub: { fontFamily: fonts.body, fontSize: 12, color: 'rgba(255,255,255,.65)', marginTop: 2 },
+  proSub: { fontFamily: fonts.body, fontSize: 12, color: 'rgba(255,255,255,.75)', marginTop: 2 },
   proCta: {
     backgroundColor: colors.sunset,
     borderRadius: 14,

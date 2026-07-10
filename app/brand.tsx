@@ -1,9 +1,9 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { Screen, Txt, Icon } from '../src/components';
+import { Screen, Txt, Icon, HeroIconButton } from '../src/components';
 import { colors, fonts, iconGradient } from '../src/theme';
 
 // The 6d icon recipe: sunset gradient square, petrol sea wave, cream sand-ring + dot.
@@ -97,9 +97,9 @@ export default function Brand() {
   return (
     <Screen scroll bg={colors.sandBg}>
       <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+        <HeroIconButton variant="card" onPress={() => router.back()}>
           <Icon name="chevronRight" size={18} color={colors.ink} strokeWidth={2.2} />
-        </Pressable>
+        </HeroIconButton>
         <Txt style={styles.headerTitle}>אייקון אפליקציה + Splash</Txt>
       </View>
 
@@ -130,16 +130,6 @@ export default function Brand() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingTop: 10, paddingBottom: 20 },
-  backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerTitle: { fontFamily: fonts.bold, fontSize: 17, color: colors.ink },
   iconBoard: {
     flexDirection: 'row-reverse',

@@ -27,10 +27,10 @@ export default function Tournament() {
       <View style={[styles.hero, { paddingTop: insets.top + 20 }]}>
         <DecorRing size={250} color={colors.sandGlow} opacity={0.13} variant={2} style={{ left: -70, top: -50 }} />
         <View style={styles.heroTopRow}>
-          <HeroIconButton size={36} onPress={() => router.back()}>
+          <HeroIconButton onPress={() => router.back()}>
             <Icon name="chevronRight" size={17} color="#fff" strokeWidth={2.4} />
           </HeroIconButton>
-          <HeroIconButton size={36}>
+          <HeroIconButton>
             <Icon name="share" size={16} color="#fff" strokeWidth={1.7} />
           </HeroIconButton>
         </View>
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   spotsHeader: { flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'space-between' },
   spotsLabel: { fontFamily: fonts.extrabold, fontSize: 14, color: colors.ink },
-  spotsValue: { fontFamily: fonts.extrabold, fontSize: 13, color: colors.sunset },
+  spotsValue: { fontFamily: fonts.extrabold, fontSize: 13, color: colors.sunsetDeep },
   meterRow: { flexDirection: 'row', gap: 6, marginTop: 10 },
   meterSeg: { flex: 1, height: 8, borderRadius: 4 },
   avatarsRow: { flexDirection: 'row-reverse', alignItems: 'center', marginTop: 12 },
@@ -220,10 +220,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  partnerPlusTxt: { fontFamily: fonts.bold, fontSize: 20, color: colors.sunset },
+  partnerPlusTxt: { fontFamily: fonts.bold, fontSize: 20, color: colors.sunsetDeep },
   partnerTitle: { fontFamily: fonts.extrabold, fontSize: 14, color: colors.ink },
   partnerSub: { fontFamily: fonts.medium, fontSize: 12, color: colors.muted, marginTop: 1 },
-  partnerPick: { fontFamily: fonts.bold, fontSize: 13, color: colors.sunset },
+  partnerPick: { fontFamily: fonts.bold, fontSize: 13, color: colors.sunsetDeep },
 
   ctaWrap: {
     paddingHorizontal: 16,

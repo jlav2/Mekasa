@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen, Txt, Button, Icon, TextField } from '../src/components';
+import { Screen, Txt, Button, Icon, TextField, HeroIconButton } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
 
@@ -53,9 +53,9 @@ export default function SignUp() {
     <Screen bg={colors.sandBg} keyboardAvoiding contentStyle={{ paddingTop: 64, paddingBottom: 40, flexGrow: 1 }}>
       <View style={styles.titleRow}>
         <Txt style={styles.title}>הרשמה</Txt>
-        <Pressable style={styles.closeBtn} onPress={() => router.back()}>
+        <HeroIconButton variant="card" onPress={() => router.back()}>
           <Icon name="close" size={13} color={colors.muted} strokeWidth={2} />
-        </Pressable>
+        </HeroIconButton>
       </View>
       <Txt style={styles.helper}>שנייה אחת, ואתה על החול</Txt>
 
@@ -112,7 +112,6 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: fonts.displayBold, fontSize: 52, lineHeight: 52, color: colors.petrol },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(14,79,94,.08)', alignItems: 'center', justifyContent: 'center' },
   helper: { fontSize: 13.5, color: colors.muted, marginTop: 4 },
   error: { color: colors.danger, fontSize: 13, fontFamily: fonts.semibold, textAlign: 'center' },
   linkRow: { flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 6 },

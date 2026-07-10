@@ -31,7 +31,7 @@ describe('TextField', () => {
     const flatStyle = Array.isArray(hintText.props.style)
       ? Object.assign({}, ...hintText.props.style.flat(Infinity).filter(Boolean))
       : hintText.props.style;
-    expect(flatStyle.color).toBe(colors.live);
+    expect(flatStyle.color).toBe(colors.liveDeep);
   });
 
   it('renders without crashing when pill is set, and still exposes the input', async () => {

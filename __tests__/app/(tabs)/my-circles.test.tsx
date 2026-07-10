@@ -45,7 +45,7 @@ const makeCircle = (overrides: Partial<Circle> = {}): Circle => ({
 });
 
 beforeEach(() => {
-  useStore.setState(INITIAL_STATE, true);
+  useStore.setState({ ...INITIAL_STATE, loading: false }, true);
   mockPush.mockClear();
   mockReplace.mockClear();
 });

@@ -73,7 +73,7 @@ export const radii = {
   card: 22,
   cardSm: 20,
   listContainer: 18,
-  chip: 12,
+  chip: 22,
   chipSm: 10,
   badge: 11,
   sheet: 32,

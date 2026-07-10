@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
-import { Screen, Txt, Icon, DecorRing } from '../src/components';
+import { Screen, Txt, Icon, DecorRing, HeroIconButton } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 import { useStore } from '../src/store';
 import { BEACH_OPTIONS } from '../src/data/beaches';
@@ -38,9 +38,9 @@ export default function BeachPicker() {
     <Screen padded={false} bg={colors.sandBg} edges={{ top: false, bottom: false }}>
       <View style={styles.topArea}>
         <View style={styles.titleRow}>
-          <Pressable style={styles.closeBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="סגור">
-            <Icon name="close" size={12} color={colors.muted} strokeWidth={2} />
-          </Pressable>
+          <HeroIconButton variant="card" onPress={() => router.back()} accessibilityLabel="סגור">
+            <Icon name="close" size={16} color={colors.muted} strokeWidth={2} />
+          </HeroIconButton>
           <Txt style={styles.title}>איפה משחקים?</Txt>
         </View>
         <View style={styles.searchBar}>
@@ -140,14 +140,6 @@ export default function BeachPicker() {
 const styles = StyleSheet.create({
   topArea: { paddingTop: 64, paddingHorizontal: 22 },
   titleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(14,79,94,.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   title: { fontFamily: fonts.displayBold, fontSize: 40, lineHeight: 40, color: colors.petrol },
   searchBar: {
     flexDirection: 'row-reverse',
@@ -180,7 +172,7 @@ const styles = StyleSheet.create({
   },
   selectedTopRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
   selectedTitle: { fontSize: 16, fontFamily: fonts.extrabold, color: '#fff' },
-  selectedMeta: { fontSize: 12, color: 'rgba(255,255,255,.65)', marginTop: 1 },
+  selectedMeta: { fontSize: 12, color: 'rgba(255,255,255,.75)', marginTop: 1 },
   checkCircle: {
     width: 28,
     height: 28,
@@ -208,7 +200,7 @@ const styles = StyleSheet.create({
   otherMeta: { fontSize: 12, color: colors.faint, marginTop: 1 },
   liveTag: { flexDirection: 'row-reverse', alignItems: 'center', gap: 5, flexShrink: 0 },
   liveDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.live },
-  liveTagTxt: { fontSize: 11.5, fontFamily: fonts.bold, color: colors.live },
+  liveTagTxt: { fontSize: 11.5, fontFamily: fonts.bold, color: colors.liveDeep },
   addRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, paddingHorizontal: 6 },
   addRowTxt: {
     fontSize: 12.5,

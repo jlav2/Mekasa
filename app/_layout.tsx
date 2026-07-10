@@ -19,6 +19,7 @@ import {
   Karantina_700Bold,
 } from '@expo-google-fonts/karantina';
 import { colors, shadows } from '../src/theme';
+import { BrandSplash } from '../src/components';
 import { useStore } from '../src/store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -63,7 +64,10 @@ export default function RootLayout() {
     useStore.getState().hydrate();
   }, []);
 
-  if (!loaded && !error) return <View style={{ flex: 1, backgroundColor: colors.sandBg }} />;
+  // Fonts still loading: on native the OS splash covers this frame; on web
+  // (no native splash) this IS the first paint — show the branded splash
+  // rather than a blank so startup reads as MeKasa from the first moment.
+  if (!loaded && !error) return <BrandSplash />;
 
   return (
     <GestureHandlerRootView>

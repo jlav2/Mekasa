@@ -8,7 +8,8 @@
     "userInterfaceStyle": "light",
     "scheme": "mekasa",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.MeKasaApp"
     },
     "android": {
       "adaptiveIcon": {

@@ -1,8 +1,8 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Screen, Txt, Button, ProBadge, SandRing, Icon } from '../src/components';
+import { Screen, Txt, Button, ProBadge, SandRing, Icon, HeroIconButton } from '../src/components';
 import { colors, fonts, petrolGradient, shadows } from '../src/theme';
 
 type Benefit = { title: string; sub: string };
@@ -54,9 +54,9 @@ export default function Paywall() {
 
       <Screen bg="transparent" edges={{ top: false, bottom: false }} contentStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 20 }} style={{ flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <Pressable style={styles.closeBtn} onPress={() => router.back()}>
-            <Icon name="close" size={14} color="#fff" strokeWidth={2.2} />
-          </Pressable>
+          <HeroIconButton variant="translucent" onPress={() => router.back()} style={{ alignSelf: 'flex-end' }}>
+            <Icon name="close" size={16} color="#fff" strokeWidth={2.2} />
+          </HeroIconButton>
 
           <View style={{ marginTop: 18 }}>
             <ProBadge size={13} />
@@ -101,15 +101,6 @@ export default function Paywall() {
 const styles = StyleSheet.create({
   ringTop: { position: 'absolute', left: -110, top: -70 },
   ringBottom: { position: 'absolute', right: -60, bottom: 120 },
-  closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'flex-end',
-  },
   headline: {
     fontFamily: fonts.displayBold,
     fontSize: 64,
@@ -135,7 +126,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   benefitTitle: { fontSize: 15, fontFamily: fonts.bold, color: '#fff' },
-  benefitSub: { fontSize: 12.5, color: 'rgba(255,255,255,.6)', marginTop: 2 },
+  benefitSub: { fontSize: 12.5, color: 'rgba(255,255,255,.75)', marginTop: 2 },
   priceRow: { flexDirection: 'row-reverse', gap: 10 },
   priceCard: {
     flex: 1,
@@ -161,8 +152,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   discountTxt: { fontSize: 10, fontFamily: fonts.extrabold, color: '#fff' },
-  priceLabel: { fontSize: 12.5, fontFamily: fonts.bold, color: 'rgba(255,255,255,.65)' },
+  priceLabel: { fontSize: 12.5, fontFamily: fonts.bold, color: 'rgba(255,255,255,.75)' },
   priceValue: { fontSize: 20, fontFamily: fonts.extrabold, color: '#fff', marginTop: 2 },
-  pricePer: { fontSize: 12, fontFamily: fonts.semibold, color: 'rgba(255,255,255,.55)' },
-  footer: { textAlign: 'center', fontSize: 11.5, color: 'rgba(255,255,255,.5)', marginTop: 12 },
+  pricePer: { fontSize: 12, fontFamily: fonts.semibold, color: 'rgba(255,255,255,.75)' },
+  footer: { textAlign: 'center', fontSize: 11.5, color: 'rgba(255,255,255,.75)', marginTop: 12 },
 });

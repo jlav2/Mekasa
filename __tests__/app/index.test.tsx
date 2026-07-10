@@ -22,6 +22,10 @@ jest.mock('expo-router', () => ({
     require('react').createElement(require('react-native').Text, null, 'REDIRECT:' + href),
 }));
 
+// index.tsx holds the branded splash for MIN_SPLASH_MS (1100ms) before
+// redirecting, so give findByText a window past that on real timers.
+const SPLASH_WAIT = { timeout: 2000 };
+
 beforeEach(() => {
   mockIsSupabaseConfigured = false;
   jest.mocked(backend.sessionInfo).mockClear();
@@ -31,7 +35,7 @@ beforeEach(() => {
 describe('Index (app entry)', () => {
   it('redirects to /login when Supabase is not configured, without calling sessionInfo', async () => {
     await render(<Index />);
-    expect(await screen.findByText('REDIRECT:/login')).toBeTruthy();
+    expect(await screen.findByText('REDIRECT:/login', undefined, SPLASH_WAIT)).toBeTruthy();
     expect(backend.sessionInfo).not.toHaveBeenCalled();
   });
 
@@ -39,13 +43,13 @@ describe('Index (app entry)', () => {
     mockIsSupabaseConfigured = true;
     jest.mocked(backend.sessionInfo).mockResolvedValueOnce({ id: 'u1', isAnonymous: false });
     await render(<Index />);
-    expect(await screen.findByText('REDIRECT:/map')).toBeTruthy();
+    expect(await screen.findByText('REDIRECT:/map', undefined, SPLASH_WAIT)).toBeTruthy();
   });
 
   it('redirects to /login when configured but there is no session', async () => {
     mockIsSupabaseConfigured = true;
     jest.mocked(backend.sessionInfo).mockResolvedValueOnce(null);
     await render(<Index />);
-    expect(await screen.findByText('REDIRECT:/login')).toBeTruthy();
+    expect(await screen.findByText('REDIRECT:/login', undefined, SPLASH_WAIT)).toBeTruthy();
   });
 });

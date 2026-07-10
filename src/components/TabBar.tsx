@@ -63,7 +63,7 @@ export function TabBar({ active }: { active: TabKey }) {
                 <TabIcon tab={t.key} active={isActive} />
                 {badge > 0 ? (
                   <View style={styles.badge}>
-                    <Txt style={{ color: '#fff', fontSize: 9.5, fontFamily: fonts.extrabold }}>{badge}</Txt>
+                    <Txt style={{ color: '#fff', fontSize: 11, fontFamily: fonts.extrabold }}>{badge}</Txt>
                   </View>
                 ) : null}
               </View>
@@ -106,9 +106,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     left: -8,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: colors.sunset,
     alignItems: 'center',
     justifyContent: 'center',

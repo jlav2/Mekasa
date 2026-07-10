@@ -75,7 +75,7 @@ const volleyballMissing = circle({
 
 const INITIAL_STATE = useStore.getState();
 beforeEach(() => {
-  useStore.setState(INITIAL_STATE, true);
+  useStore.setState({ ...INITIAL_STATE, loading: false }, true);
   mockPush.mockClear();
 });
 

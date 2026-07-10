@@ -1,4 +1,4 @@
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import {
   StatusDot,
   SandRing,
   Icon,
+  HeroIconButton,
 } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 
@@ -46,9 +47,9 @@ export default function Bracket() {
     <View style={{ flex: 1, backgroundColor: colors.sandBg, paddingTop: insets.top + 10 }}>
       {/* header */}
       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, paddingHorizontal: 22 }}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Icon name="chevronRight" size={16} color={colors.petrol} strokeWidth={2.4} />
-        </Pressable>
+        <HeroIconButton variant="card" onPress={() => router.back()} accessibilityLabel="חזור">
+          <Icon name="chevronRight" size={18} color={colors.petrol} strokeWidth={2.4} />
+        </HeroIconButton>
         <View style={{ flex: 1 }}>
           <Txt style={{ fontFamily: fonts.displayBold, fontSize: 40, lineHeight: 40, color: colors.petrol }}>גביע הילטון</Txt>
           <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6 }}>
@@ -66,12 +67,12 @@ export default function Bracket() {
         <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 14, marginTop: 10 }}>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Txt style={{ fontSize: 15, fontFamily: fonts.extrabold, color: '#fff' }}>גיא + דניאל</Txt>
-            <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.55)', fontFamily: fonts.medium }}>קבוצה 3</Txt>
+            <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontFamily: fonts.medium }}>קבוצה 3</Txt>
           </View>
           <Txt style={{ fontFamily: fonts.displayBold, fontSize: 30, color: colors.sandGlow }}>נגד</Txt>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Txt style={{ fontSize: 15, fontFamily: fonts.extrabold, color: '#fff' }}>עומר + רועי</Txt>
-            <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.55)', fontFamily: fonts.medium }}>קבוצה 6</Txt>
+            <Txt style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontFamily: fonts.medium }}>קבוצה 6</Txt>
           </View>
         </View>
       </Card>
@@ -123,7 +124,6 @@ export default function Bracket() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.chipBg, alignItems: 'center', justifyContent: 'center' },
   colLabel: { fontSize: 11, fontFamily: fonts.extrabold, color: colors.faint, textAlign: 'center' },
   match: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.hairline, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 10 },
   matchLive: { borderWidth: 1.5, borderColor: colors.live, ...shadows.card },

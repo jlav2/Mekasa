@@ -2,7 +2,7 @@ import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { Txt, Icon, RingBadge } from '../src/components';
+import { Txt, Icon, RingBadge, HeroIconButton } from '../src/components';
 import { colors, fonts } from '../src/theme';
 
 type Msg = {
@@ -124,9 +124,9 @@ export default function ChatAndroid() {
       {/* app bar */}
       <View style={[styles.appBar, { paddingTop: insets.top }]}>
         <View style={styles.appBarRow}>
-          <Pressable onPress={() => router.back()} style={styles.iconBtn}>
+          <HeroIconButton size={48} variant="card" onPress={() => router.back()} accessibilityLabel="חזור">
             <Icon name="chevronRight" size={18} color={colors.ink} strokeWidth={2} />
-          </Pressable>
+          </HeroIconButton>
           <RingAvatar />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Txt style={styles.appBarTitle} numberOfLines={1}>

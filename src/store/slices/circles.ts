@@ -145,7 +145,8 @@ export const createCirclesSlice = (set: Set, get: Get): CirclesSlice => ({
       pushJoin(circle, me, events).then((ok) => {
         if (ok) return;
         // DB rejected the join (capacity trigger lost a race) — undo the
-        // optimistic add so local state doesn't stay overfull/live.
+        // optimistic add so local state doesn't stay overfull/live, and
+        // surface the "spot taken" card (9f) instead of failing silently.
         const eventIds = new Set(events.map((e) => e.id));
         set((s) => ({
           circles: s.circles.map((c) =>
@@ -154,6 +155,7 @@ export const createCirclesSlice = (set: Set, get: Get): CirclesSlice => ({
               : c,
           ),
           messages: s.messages.filter((m) => !eventIds.has(m.id)),
+          toast: { kind: 'joinRace', circleId },
         }));
       });
     }

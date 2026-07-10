@@ -35,6 +35,7 @@ export async function goLive(
     await runGoLive(set, get, uid, kind, overrideName, overrideUsername);
   } finally {
     goingLive = false;
+    set({ loading: false });
   }
 }
 

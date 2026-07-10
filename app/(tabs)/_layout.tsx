@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { Txt, Icon, OfflineBanner } from '../../src/components';
+import { Txt, Icon, OfflineBanner, Toast } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
 import { useStore } from '../../src/store';
 
@@ -85,7 +85,7 @@ function PillTabBar({ state, navigation }: PillTabBarProps) {
                 <TabIcon icon={meta.icon} active={isActive} />
                 {badge > 0 ? (
                   <Animated.View entering={ZoomIn.duration(200)} exiting={ZoomOut.duration(150)} style={styles.badge}>
-                    <Txt style={{ color: '#fff', fontSize: 9.5, fontFamily: fonts.extrabold }}>{badge}</Txt>
+                    <Txt style={{ color: '#fff', fontSize: 11, fontFamily: fonts.extrabold }}>{badge}</Txt>
                   </Animated.View>
                 ) : null}
               </Animated.View>
@@ -120,6 +120,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="profile" />
       </Tabs>
       <OfflineBanner />
+      <Toast />
     </View>
   );
 }
@@ -145,9 +146,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     left: -8,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: colors.sunset,
     alignItems: 'center',
     justifyContent: 'center',

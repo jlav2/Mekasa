@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Screen, Txt, Toggle, Icon } from '../src/components';
+import { Screen, Txt, Toggle, Icon, HeroIconButton } from '../src/components';
 import { colors, fonts, proGradient } from '../src/theme';
 import { useStore } from '../src/store';
 
@@ -88,10 +88,9 @@ export default function Settings() {
   return (
     <Screen scroll contentStyle={{ paddingBottom: 60 }}>
       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginTop: 8 }}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="חזור">
-
+        <HeroIconButton variant="card" onPress={() => router.back()} accessibilityLabel="חזור">
           <Icon name="chevronRight" size={16} color={colors.petrol} strokeWidth={2.4} />
-        </Pressable>
+        </HeroIconButton>
         <Txt style={{ fontFamily: fonts.displayBold, fontSize: 44, lineHeight: 44, color: colors.petrol }}>הגדרות</Txt>
       </View>
 
@@ -134,14 +133,6 @@ export default function Settings() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   sectionLabel: { fontSize: 12, fontFamily: fonts.extrabold, color: colors.faint, letterSpacing: 0.5, paddingRight: 6 },
   badgeHeaderRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 6 },
   proBadge: { borderRadius: 9, paddingHorizontal: 9, paddingVertical: 3 },

@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   chipTxt: { fontSize: 13.5, fontFamily: fonts.semibold, color: colors.ink },
   card: { position: 'absolute', left: 16, right: 16, bottom: 170 },
   statusRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
-  statusTxt: { fontSize: 12, fontFamily: fonts.bold, color: colors.sunset },
+  statusTxt: { fontSize: 12, fontFamily: fonts.bold, color: colors.sunsetDeep },
   title: { fontSize: 18, fontFamily: fonts.bold, color: colors.ink, marginTop: 6 },
   meta: { fontSize: 13, color: colors.muted, marginTop: 2, fontFamily: fonts.medium },
   actionsRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginTop: 12 },

@@ -14,13 +14,21 @@ export type CreateCircleInput = {
 
 export type MapFilter = { sport: Sport | 'all'; level: string | 'all' };
 
+// A simple one-line message, or the richer "spot taken" join-race card
+// (rendered by the shared Toast component using circleById to look up
+// display info — kept generic since the failure can originate from any
+// screen that calls joinCircle: map, notifications, circle detail).
+export type ToastState = { kind: 'message'; message: string } | { kind: 'joinRace'; circleId: string };
+
 export type AppState = {
   user: User;
   circles: Circle[];
   messages: ChatMessage[];
   notifications: AppNotification[];
   live: boolean; // true once hydrated from Supabase
+  loading: boolean; // true until the first hydrate/goLive attempt resolves (success or failure)
   authKind: 'none' | 'guest' | 'user'; // account status
+  toast: ToastState | null;
   draftBeach: BeachOption; // create-circle location choice (set by beach-picker)
   filter: MapFilter; // map chip filters
 
@@ -51,6 +59,8 @@ export type AppState = {
   checkUsername: (username: string) => Promise<boolean>;
   setSports: (sports: SportProfile[]) => void;
   setName: (name: string) => void;
+  showToast: (toast: ToastState) => void;
+  clearToast: () => void;
 
   // circles + chat + notifications + filter
   setDraftBeach: (beach: BeachOption) => void;

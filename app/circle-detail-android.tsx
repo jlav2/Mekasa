@@ -7,6 +7,7 @@ import {
   SandRing,
   StatusDot,
   Icon,
+  HeroIconButton,
 } from '../src/components';
 import { colors, fonts, shadows } from '../src/theme';
 
@@ -18,13 +19,13 @@ export default function CircleDetailAndroid() {
     <View style={{ flex: 1, backgroundColor: colors.sandBg, paddingTop: insets.top }}>
       {/* M3 app bar */}
       <View style={styles.appbar}>
-        <Pressable onPress={() => router.back()} style={styles.appbarBtn}>
+        <HeroIconButton size={48} variant="card" onPress={() => router.back()} accessibilityLabel="חזור">
           <Icon name="chevronLeft" size={20} color={colors.ink} strokeWidth={2} />
-        </Pressable>
+        </HeroIconButton>
         <Txt style={{ flex: 1, fontSize: 20, fontFamily: fonts.medium, color: colors.ink }}>פרטי מעגל</Txt>
-        <Pressable style={styles.appbarBtn}>
+        <HeroIconButton size={48} variant="card" accessibilityLabel="שתף מעגל">
           <Icon name="share" size={19} color={colors.ink} strokeWidth={1.7} />
-        </Pressable>
+        </HeroIconButton>
       </View>
 
       <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 4 }}>
@@ -51,7 +52,7 @@ export default function CircleDetailAndroid() {
         {/* players */}
         <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 18 }}>
           <Txt style={{ fontSize: 14, fontFamily: fonts.bold, color: colors.ink }}>שחקנים</Txt>
-          <Txt style={{ fontSize: 12.5, fontFamily: fonts.bold, color: colors.sunset }}>3/4 — חסר אחד</Txt>
+          <Txt style={{ fontSize: 12.5, fontFamily: fonts.bold, color: colors.sunsetDeep }}>3/4 — חסר אחד</Txt>
         </View>
         <View style={{ flexDirection: 'row-reverse', gap: 12, marginTop: 10 }}>
           <Player letter="ע" name="עומר" color={colors.petrol} />
@@ -59,9 +60,9 @@ export default function CircleDetailAndroid() {
           <Player letter="נ" name="נועה" color={colors.amber} />
           <View style={{ alignItems: 'center', gap: 5 }}>
             <View style={styles.emptyAvatar}>
-              <Txt style={{ fontSize: 22, color: colors.sunset, fontFamily: fonts.semibold }}>+</Txt>
+              <Txt style={{ fontSize: 22, color: colors.sunsetDeep, fontFamily: fonts.semibold }}>+</Txt>
             </View>
-            <Txt style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.sunset }}>זה אתה?</Txt>
+            <Txt style={{ fontSize: 11, fontFamily: fonts.bold, color: colors.sunsetDeep }}>זה אתה?</Txt>
           </View>
         </View>
 
@@ -117,7 +118,6 @@ function Player({ letter, name, color }: { letter: string; name: string; color: 
 
 const styles = StyleSheet.create({
   appbar: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, height: 64, paddingHorizontal: 4 },
-  appbarBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   hero: { backgroundColor: colors.petrol, borderRadius: 20, padding: 20, overflow: 'hidden' },
   stateBadge: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, backgroundColor: colors.sunset, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   sportBadge: { backgroundColor: 'rgba(255,255,255,.14)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },

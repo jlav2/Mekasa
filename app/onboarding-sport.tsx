@@ -85,7 +85,7 @@ export default function OnboardingSport() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Txt style={{ fontFamily: fonts.bold, fontSize: 17, color: on ? '#fff' : colors.ink }}>{sp.name}</Txt>
-                  <Txt style={{ fontSize: 12.5, color: on ? 'rgba(255,255,255,.65)' : colors.faint, fontFamily: fonts.medium }}>
+                  <Txt style={{ fontSize: 12.5, color: on ? 'rgba(255,255,255,.75)' : colors.faint, fontFamily: fonts.medium }}>
                     {sp.sub}
                   </Txt>
                 </View>

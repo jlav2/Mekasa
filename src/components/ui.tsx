@@ -415,20 +415,26 @@ export function Row({ children, style, gap = 12, onPress }: { children: ReactNod
   );
 }
 
-/* ---------------- HeroIconButton (translucent round button on petrol heroes) ---------------- */
+/* ---------------- HeroIconButton (circular icon button — translucent on petrol heroes, card on light screens) ---------------- */
 export function HeroIconButton({
-  size = 38,
+  size = 44,
+  variant = 'translucent',
   onPress,
   style,
   children,
   accessibilityLabel,
 }: {
   size?: number;
+  variant?: 'translucent' | 'card';
   onPress?: () => void;
   style?: ViewStyle;
   children: ReactNode;
   accessibilityLabel?: string;
 }) {
+  const fill: ViewStyle =
+    variant === 'card'
+      ? { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.hairlineStrong }
+      : { backgroundColor: 'rgba(255,255,255,.14)' };
   return (
     <Pressable
       onPress={onPress}
@@ -439,10 +445,10 @@ export function HeroIconButton({
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: 'rgba(255,255,255,.14)',
           alignItems: 'center',
           justifyContent: 'center',
         },
+        fill,
         Platform.OS === 'web' && { cursor: 'pointer' },
         style,
       ]}
@@ -453,14 +459,14 @@ export function HeroIconButton({
 }
 
 const styles = StyleSheet.create({
-  badge: { paddingHorizontal: 11, paddingVertical: 4, borderRadius: 11, alignSelf: 'flex-start' },
+  badge: { paddingHorizontal: 11, paddingVertical: 4, borderRadius: radii.badge, alignSelf: 'flex-start' },
   chip: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 6,
-    height: 40,
+    height: 44,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: radii.chip,
     justifyContent: 'center',
   },
   segment: {

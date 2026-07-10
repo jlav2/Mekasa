@@ -1,7 +1,7 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Screen, Txt, Icon, RingBadge, DecorRing } from '../src/components';
+import { Screen, Txt, Icon, RingBadge, DecorRing, HeroIconButton } from '../src/components';
 import { colors, fonts, shadows, beachHeroGradient } from '../src/theme';
 
 function LiveCircleRow({
@@ -74,9 +74,9 @@ export default function Beach() {
       >
         <DecorRing size={230} opacity={0.13} style={{ left: -64, top: -46 }} />
         <View style={styles.heroTopRow}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <HeroIconButton variant="translucent" onPress={() => router.back()} accessibilityLabel="חזור">
             <Icon name="chevronRight" size={17} color="#fff" strokeWidth={2.4} />
-          </Pressable>
+          </HeroIconButton>
           <View style={styles.followPill}>
             <Icon name="bell" size={15} color={colors.sandGlow} strokeWidth={2} />
             <Txt style={styles.followTxt}>עוקב</Txt>
@@ -170,14 +170,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   followPill: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
@@ -198,7 +190,7 @@ const styles = StyleSheet.create({
   heroMeta: { fontFamily: fonts.medium, fontSize: 13, color: 'rgba(255,255,255,.72)', marginTop: 6 },
   statsRow: { flexDirection: 'row-reverse', gap: 18, marginTop: 14 },
   statNum: { fontFamily: fonts.displayBold, fontSize: 32, lineHeight: 32 },
-  statLabel: { fontFamily: fonts.semibold, fontSize: 11, color: 'rgba(255,255,255,.6)' },
+  statLabel: { fontFamily: fonts.semibold, fontSize: 11, color: 'rgba(255,255,255,.75)' },
 
   body: { paddingHorizontal: 16, paddingTop: 16, gap: 10 },
 
@@ -221,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tourneyTitle: { fontFamily: fonts.extrabold, fontSize: 13.5, color: '#fff' },
-  tourneySub: { fontFamily: fonts.medium, fontSize: 11.5, color: 'rgba(255,255,255,.65)', marginTop: 1 },
+  tourneySub: { fontFamily: fonts.medium, fontSize: 11.5, color: 'rgba(255,255,255,.75)', marginTop: 1 },
   tourneyCta: { backgroundColor: colors.sunset, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 7 },
   tourneyCtaTxt: { fontFamily: fonts.extrabold, fontSize: 12, color: '#fff' },
 
