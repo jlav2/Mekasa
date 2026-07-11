@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path as SvgPath } from 'react-native-svg';
 import { Screen, Txt, Icon, DecorRing, HeroIconButton, RingBadge, StatusDot, Button, ClaimCountdownRing } from '../src/components';
 import { colors, fonts } from '../src/theme';
 import { useStore } from '../src/store';
+import { startClaimActivity, endClaimActivity } from '../src/lib/liveActivity';
 
 const ordinal = (n: number) =>
   n === 1 ? 'ראשון' : n === 2 ? 'שני' : n === 3 ? 'שלישי' : `מספר ${n}`;
@@ -24,6 +25,31 @@ export default function CircleWaitlist() {
   // fresh 5:00 window when the claim first becomes reachable.
   const [claimExpiresAt] = useState(() => Date.now() + 5 * 60 * 1000);
   const [claimExpired, setClaimExpired] = useState(false);
+
+  // §10c: mirror the claim window onto the lock screen / Dynamic Island as a
+  // Live Activity while it's open. No-op on web / iOS<16.2 / when the widget
+  // target isn't built — the on-screen ClaimCountdownRing is the fallback.
+  const claimReady =
+    !!circle &&
+    circle.waitlist.findIndex((p) => p.id === userId) === 0 &&
+    circle.players.length < circle.capacity &&
+    !claimExpired;
+  useEffect(() => {
+    if (!claimReady || !circle) return;
+    startClaimActivity({
+      circleName: circle.sportLabel,
+      beachName: circle.beachName,
+      gameTime: circle.startLabel,
+      deepLink: `mekasa://claim/${circle.id}`,
+      avatars: circle.players.slice(0, 3).map((p) => p.avatarInitial),
+      expiresAt: claimExpiresAt,
+      waitingBehind: Math.max(0, circle.waitlist.length - 1),
+    });
+    return () => {
+      endClaimActivity();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claimReady, circle?.id, claimExpiresAt]);
 
   if (!circle) {
     return (
