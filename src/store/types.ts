@@ -1,6 +1,7 @@
 import type { AppNotification, ChatMessage, Circle, Sport, SportProfile, User } from '../data/models';
 import type { BeachOption } from '../data/beaches';
 import type { AuthResult } from '../data/backend';
+import type { BannerSlice } from './slices/bannerSlice';
 
 export type CreateCircleInput = {
   sport: Sport;
@@ -73,7 +74,7 @@ export type AppState = {
   sendMessage: (circleId: string, text: string) => void;
   markAllRead: () => void;
   markRead: (id: string) => void;
-};
+} & BannerSlice; // in-app banner queue (turn 11)
 
 export type Set = (partial: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void;
 export type Get = () => AppState;

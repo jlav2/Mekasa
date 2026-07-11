@@ -12,6 +12,7 @@ export * from './PullToRefresh';
 export * from './TabBar';
 export * from './OfflineBanner';
 export * from './Toast';
+export * from './InAppBanner';
 export * from './BrandSplash';
 export * from './MapCanvas';
 export * from './MapMarker';
