@@ -19,8 +19,8 @@ describe('urlToRoute (deep link → expo-router path)', () => {
   it('maps rsvp → the circle detail', () => {
     expect(urlToRoute('mekasa://circle/x/rsvp')).toBe('/c/x');
   });
-  it('maps claim to the waitlist screen', () => {
-    expect(urlToRoute('mekasa://claim/tok123')).toBe('/circle-waitlist?claim=tok123');
+  it('maps claim to the waitlist screen with the id param the screen actually reads', () => {
+    expect(urlToRoute('mekasa://claim/tok123')).toBe('/circle-waitlist?id=tok123');
   });
   it('maps tournament', () => {
     expect(urlToRoute('mekasa://tournament/t1')).toBe('/tournament');

@@ -22,8 +22,9 @@ describe('isSuppressed (matrix #11d)', () => {
   it('drops the claim banner on the waitlist/claim screen', () => {
     expect(isSuppressed({ kind: 'claim', circleId: 'c1' }, { pathname: '/circle-waitlist' })).toBe(true);
   });
-  it('drops the tournament banner on the bracket/tournament screen', () => {
+  it('drops the tournament banner on both the lobby and the live bracket board', () => {
     expect(isSuppressed({ kind: 'tournament' }, { pathname: '/tournament' })).toBe(true);
+    expect(isSuppressed({ kind: 'tournament' }, { pathname: '/bracket' })).toBe(true);
   });
 });
 
