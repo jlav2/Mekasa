@@ -77,7 +77,9 @@ export function isSuppressed(b: Pick<Banner, 'kind' | 'circleId'>, ctx: BannerCo
     case 'startingSoon':
       return onCircle('/c/');
     case 'tournament':
-      return ctx.pathname.startsWith('/tournament');
+      // The tournament flow spans the lobby (/tournament) and the live bracket
+      // board (/bracket) — suppress on either.
+      return ctx.pathname.startsWith('/tournament') || ctx.pathname.startsWith('/bracket');
   }
 }
 

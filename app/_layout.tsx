@@ -81,7 +81,10 @@ export default function RootLayout() {
   const circleId = (Array.isArray(params.circle) ? params.circle[0] : params.circle) ??
     (Array.isArray(params.id) ? params.id[0] : params.id);
   useEffect(() => {
-    useStore.getState().setBannerContext({ pathname, circleId });
+    // liveGameActive drives the "don't interrupt a live game" suppression arm —
+    // true when the active screen belongs to a circle that's currently live.
+    const circle = circleId ? useStore.getState().circleById(circleId) : undefined;
+    useStore.getState().setBannerContext({ pathname, circleId, liveGameActive: circle?.state === 'live' });
   }, [pathname, circleId]);
 
   // Push notifications (native only). expo-notifications has no meaningful web

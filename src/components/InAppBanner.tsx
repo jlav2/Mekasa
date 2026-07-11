@@ -171,7 +171,7 @@ export function InAppBanner() {
           <View style={styles.row}>
             {/* leading */}
             {banner.kind === 'claim' && banner.expiresAt ? (
-              <ClaimCountdownRing expiresAt={banner.expiresAt} size={44} />
+              <ClaimCountdownRing expiresAt={banner.expiresAt} size={44} onExpire={exit} />
             ) : banner.senderName ? (
               <View style={[styles.avatar, { backgroundColor: banner.senderColor ?? colors.petrolLight }]}>
                 <Txt style={styles.avatarTxt}>{banner.senderName[0]}</Txt>

@@ -104,7 +104,10 @@ export function urlToRoute(url: string): string | null {
   const [head, ...rest] = m[1].split('/');
   switch (head) {
     case 'claim':
-      return `/circle-waitlist?claim=${rest[0] ?? ''}`;
+      // circle-waitlist reads `id` (circleById) — the param key must match, or
+      // the screen falls through to not-found. The claim path segment is the
+      // circle id in this model (a real token system would resolve it here).
+      return `/circle-waitlist?id=${rest[0] ?? ''}`;
     case 'circle':
       if (rest[1] === 'rsvp') return `/c/${rest[0] ?? ''}`;
       if (rest[1] === 'manage') return '/host-tools';
