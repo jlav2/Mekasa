@@ -9,7 +9,10 @@
     "scheme": "mekasa",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.MeKasaApp"
+      "bundleIdentifier": "com.anonymous.MeKasaApp",
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +37,13 @@
           "backgroundColor": "#F0862F"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#FF6B2C"
+        }
+      ]
     ]
   }
 }

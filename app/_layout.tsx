@@ -1,7 +1,8 @@
 import { ReactNode, useEffect } from 'react';
 import { Platform, View, useWindowDimensions } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, usePathname, useRouter, useGlobalSearchParams } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -19,8 +20,16 @@ import {
   Karantina_700Bold,
 } from '@expo-google-fonts/karantina';
 import { colors, shadows } from '../src/theme';
-import { BrandSplash } from '../src/components';
+import { BrandSplash, InAppBanner } from '../src/components';
 import { useStore } from '../src/store';
+import {
+  setupAndroidChannels,
+  setupIOSCategories,
+  routeFromNotification,
+  bannerKindFromCategory,
+  registerForPushNotificationsAsync,
+} from '../src/lib/notifications';
+import type { BannerKind } from '../src/store/slices/bannerSlice';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -42,6 +51,10 @@ function WebShell({ children }: { children: ReactNode }) {
 }
 
 export default function RootLayout() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useGlobalSearchParams<{ id?: string; circle?: string }>();
+
   const [loaded, error] = useFonts({
     Heebo_400Regular,
     Heebo_500Medium,
@@ -64,6 +77,59 @@ export default function RootLayout() {
     useStore.getState().hydrate();
   }, []);
 
+  // Keep the banner suppression context in sync with the active route.
+  const circleId = (Array.isArray(params.circle) ? params.circle[0] : params.circle) ??
+    (Array.isArray(params.id) ? params.id[0] : params.id);
+  useEffect(() => {
+    useStore.getState().setBannerContext({ pathname, circleId });
+  }, [pathname, circleId]);
+
+  // Push notifications (native only). expo-notifications has no meaningful web
+  // surface, and the in-app banner covers the foreground path there anyway.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    setupAndroidChannels().catch(() => {});
+    setupIOSCategories().catch(() => {});
+    registerForPushNotificationsAsync().catch(() => {});
+
+    // Foreground: suppress the OS banner and render our own from the payload.
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: false,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: true,
+      }),
+    });
+    const received = Notifications.addNotificationReceivedListener((n) => {
+      const content = n.request.content;
+      const data = (content.data ?? {}) as Record<string, any>;
+      const kind = (data.kind as BannerKind | undefined) ??
+        (bannerKindFromCategory(content.categoryIdentifier ?? undefined) as BannerKind | null);
+      if (!kind) return; // rsvp etc. → notifications tab only
+      useStore.getState().showBanner({
+        kind,
+        title: content.title ?? '',
+        body: content.body ?? '',
+        circleId: data.circleId,
+        expiresAt: data.expiresAt,
+        claimToken: data.claimToken,
+        requestId: data.requestId,
+        senderName: data.senderName,
+        senderColor: data.senderColor,
+      });
+    });
+    // Tap on a delivered notification → deep-link route.
+    const responded = Notifications.addNotificationResponseReceivedListener((r) => {
+      const path = routeFromNotification(r);
+      if (path) router.push(path as any);
+    });
+    return () => {
+      received.remove();
+      responded.remove();
+    };
+  }, [router]);
+
   // Fonts still loading: on native the OS splash covers this frame; on web
   // (no native splash) this IS the first paint — show the branded splash
   // rather than a blank so startup reads as MeKasa from the first moment.
@@ -81,6 +147,7 @@ export default function RootLayout() {
               animation: 'slide_from_left', // RTL-forward feel
             }}
           />
+          <InAppBanner />
         </WebShell>
       </SafeAreaProvider>
     </GestureHandlerRootView>

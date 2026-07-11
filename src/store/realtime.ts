@@ -86,10 +86,10 @@ async function runGoLive(
   // hydrate/auth action retries, since `live` stays false and the guard clears.
   if (!data) return;
   set({ ...data, live: true });
-  subscribeAll(set);
+  subscribeAll(set, get);
 }
 
-function subscribeAll(set: Set) {
+function subscribeAll(set: Set, get: Get) {
   unsubscribe?.();
   unsubscribe = subscribeRealtime({
     onCircleInsert: (circle) =>
@@ -141,10 +141,25 @@ function subscribeAll(set: Set) {
       set((s) => ({
         circles: s.circles.map((c) => (c.id === patch.id ? { ...c, ...patch } : c)),
       })),
-    onMessageInsert: (message) =>
-      set((s) =>
-        s.messages.some((m) => m.id === message.id) ? s : { messages: [...s.messages, message] },
-      ),
+    onMessageInsert: (message) => {
+      if (get().messages.some((m) => m.id === message.id)) return;
+      set((s) => ({ messages: [...s.messages, message] }));
+      // Foreground in-app chat banner for incoming messages (turn 11). The
+      // banner slice's suppression matrix drops it when the user is already in
+      // that chat / in a live game / on the rating screen, and coalesces
+      // repeats from the same sender.
+      if (message.kind === 'in' && message.senderName) {
+        const circle = get().circleById(message.circleId);
+        get().showBanner({
+          kind: 'chat',
+          title: `${message.senderName} · ${circle?.beachName ?? 'מעגל'}`,
+          body: message.text,
+          circleId: message.circleId,
+          senderName: message.senderName,
+          senderColor: message.avatarColor ?? message.senderColor,
+        });
+      }
+    },
     onNotificationInsert: (notification) =>
       set((s) =>
         s.notifications.some((n) => n.id === notification.id)
