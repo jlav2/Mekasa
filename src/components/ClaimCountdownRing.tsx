@@ -37,9 +37,9 @@ function fmt(ms: number): string {
 }
 
 function phaseColor(msLeft: number): string {
-  if (msLeft > 120000) return TEAL;
-  if (msLeft > 60000) return AMBER;
-  return RED;
+  if (msLeft > 120000) return TEAL; // > 2:00
+  if (msLeft >= 60000) return AMBER; // 2:00–1:00 inclusive (1:00 is still amber)
+  return RED; // < 1:00
 }
 
 export function ClaimCountdownRing({

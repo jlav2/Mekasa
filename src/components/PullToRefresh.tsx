@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useState } from 'react';
-import { Platform, RefreshControl, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { AccessibilityInfo, Platform, RefreshControl, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -77,6 +77,7 @@ export function PullToRefresh({
   const finish = useCallback(() => {
     setRefreshing(false);
     haptic.success();
+    AccessibilityInfo.announceForAccessibility('עודכן עכשיו'); // spec 08: announce the refresh
     setChip(true);
     setTimeout(() => setChip(false), 1600);
   }, []);

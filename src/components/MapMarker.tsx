@@ -16,6 +16,14 @@ const stateColor: Record<MarkerState, string> = {
   neutral: colors.muted,
 };
 
+// Spec 03: screen readers announce the marker's state + count, e.g.
+// "מעגל חי, 3 מתוך 4" — instead of the bare "map marker".
+export function markerA11yLabel(state: MarkerState, count?: string): string {
+  if (state === 'tournament') return 'טורניר';
+  const lead = state === 'live' ? 'מעגל חי' : state === 'missing' ? 'חסר שחקן' : 'מעגל';
+  return count ? `${lead}, ${count.replace('/', ' מתוך ')}` : lead;
+}
+
 // Sand-ring circle marker sized by proximity/importance (44–72px).
 function MapMarkerBase({
   state = 'neutral',

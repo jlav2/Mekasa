@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { Txt, Icon, OfflineBanner, Toast } from '../../src/components';
-import { AnimatedTabIcon, TabBadge } from '../../src/components/TabMotion';
+import { AnimatedTabIcon, TabBadge, tabAccessibilityLabel } from '../../src/components/TabMotion';
 import { colors, fonts, shadows } from '../../src/theme';
 import { haptic } from '../../src/theme/motion';
 import { useStore } from '../../src/store';
@@ -67,7 +67,7 @@ function PillTabBar({ state, navigation }: PillTabBarProps) {
               style={[styles.tab, Platform.OS === 'web' && { cursor: 'pointer' }]}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
-              accessibilityLabel={badge > 0 ? `${meta.label}, ${badge} חדשות` : meta.label}
+              accessibilityLabel={tabAccessibilityLabel(meta.label, badge)}
               onPress={() => {
                 const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                 if (!isActive && !event.defaultPrevented) {

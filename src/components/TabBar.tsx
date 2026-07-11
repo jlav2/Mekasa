@@ -6,7 +6,7 @@ import { Txt } from './Txt';
 import { Icon } from './icons';
 import { colors, fonts, shadows } from '../theme';
 import { haptic } from '../theme/motion';
-import { AnimatedTabIcon, TabBadge } from './TabMotion';
+import { AnimatedTabIcon, TabBadge, tabAccessibilityLabel } from './TabMotion';
 
 import { useStore } from '../store';
 
@@ -64,7 +64,7 @@ export function TabBar({ active }: { active: TabKey }) {
               }}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
-              accessibilityLabel={badge > 0 ? `${t.label}, ${badge} חדשות` : t.label}
+              accessibilityLabel={tabAccessibilityLabel(t.label, badge)}
             >
               <View>
                 <AnimatedTabIcon active={isActive}>

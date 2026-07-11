@@ -333,12 +333,13 @@ function SegItem({
   activeColor: string;
   onPress: () => void;
 }) {
-  const press = usePressScale(0.97, false);
+  const press = usePressScale(PRESS_SCALE, false);
   return (
     <AnimatedPressable
       onPress={onPress}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
+      hitSlop={{ top: 2, bottom: 2 }} // segment is 40pt tall → pad to ≥44
       style={[
         styles.segmentItem,
         active && { backgroundColor: activeColor, ...shadows.card },
@@ -400,7 +401,12 @@ export function Toggle({ value, onChange, onColor = colors.live }: { value: bool
   const [on, setOn] = useState(value);
   useEffect(() => setOn(value), [value]); // stay in sync when used as a controlled prop
   return (
-    <Pressable onPress={() => { haptic.selection(); setOn(!on); onChange?.(!on); }}>
+    <Pressable
+      onPress={() => { haptic.selection(); setOn(!on); onChange?.(!on); }}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: on }}
+      hitSlop={{ top: 7, bottom: 7, left: 6, right: 6 }} // track is 31pt tall → pad to ≥44
+    >
       <Animated.View
         style={{
           width: 52,
@@ -442,11 +448,11 @@ export function Stepper({ value, onChange, min = 0, max = 9 }: { value: number; 
   };
   return (
     <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 14 }}>
-      <Pressable onPress={() => set(v - 1)} style={[styles.stepBtn, { borderColor: colors.hairlineStrong }]}>
+      <Pressable onPress={() => set(v - 1)} hitSlop={2} accessibilityRole="button" accessibilityLabel="הפחת" style={[styles.stepBtn, { borderColor: colors.hairlineStrong }]}>
         <Icon name="minus" size={18} color={colors.muted} />
       </Pressable>
       <Txt style={{ fontFamily: fonts.displayBold, fontSize: 26, color: colors.ink, minWidth: 20, textAlign: 'center' }}>{v}</Txt>
-      <Pressable onPress={() => set(v + 1)} style={[styles.stepBtn, { backgroundColor: colors.sunset, borderColor: colors.sunset }]}>
+      <Pressable onPress={() => set(v + 1)} hitSlop={2} accessibilityRole="button" accessibilityLabel="הוסף" style={[styles.stepBtn, { backgroundColor: colors.sunset, borderColor: colors.sunset }]}>
         <Icon name="plus" size={18} color="#fff" />
       </Pressable>
     </View>
@@ -467,6 +473,7 @@ export function Row({ children, style, gap = 12, onPress }: { children: ReactNod
       onPress={onPress}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
+      hitSlop={6} // pad shorter content rows toward the ≥44pt target (rows are spaced, no overlap)
       style={[press.style, Platform.OS === 'web' && { cursor: 'pointer' }]}
     >
       {content}
