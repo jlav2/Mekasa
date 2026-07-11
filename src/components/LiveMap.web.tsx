@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 // maplibre-gl runtime into the initial bundle. The real module is loaded
 // lazily via dynamic import() on mount, below.
 import type MapLibreGL from 'maplibre-gl';
-import { MapMarker } from './MapMarker';
+import { MapMarker, markerA11yLabel } from './MapMarker';
 import { colors } from '../theme';
 import { haptic } from '../theme/motion';
 import { TLV_COAST, USER_LOCATION, CIRCLE_MARKERS } from '../data/beaches';
@@ -189,6 +189,8 @@ export function LiveMap({
         markerEls[m.id]
           ? createPortal(
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={markerA11yLabel(m.state, m.count)}
                 onPress={() => {
                   haptic.medium(); // spec 03: marker select (no-op on web)
                   onMarkerPress?.(m);

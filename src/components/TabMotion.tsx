@@ -17,6 +17,12 @@ import { DUR, SPRING } from '../theme/motion';
 // Spec 07 — tab motion pieces shared by both tab bars (the router PillTabBar in
 // app/(tabs)/_layout.tsx and the static TabBar used on non-tab screens).
 
+// A11y label with correct Hebrew grammar: "1 חדשה" (singular) vs "N חדשות".
+export function tabAccessibilityLabel(label: string, unread: number): string {
+  if (unread <= 0) return label;
+  return `${label}, ${unread} ${unread === 1 ? 'חדשה' : 'חדשות'}`;
+}
+
 // Selected icon pops on selection: dips to 0.88 then springs back, overshooting
 // to ~1.12 before settling at 1. Fires only on the false→true transition.
 export function AnimatedTabIcon({ active, children }: { active: boolean; children: ReactNode }) {

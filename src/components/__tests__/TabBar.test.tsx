@@ -72,6 +72,14 @@ describe('TabBar', () => {
     expect(screen.getByLabelText('פרופיל')).toBeTruthy();
   });
 
+  it('uses singular Hebrew grammar in the a11y label for exactly one unread', async () => {
+    useStore.setState({ notifications: [notification({ id: 'n1', unread: true })] });
+    await render(<TabBar active="map" />);
+    // "1 חדשה" (singular), not the grammatically wrong "1 חדשות".
+    expect(screen.getByLabelText('התראות, 1 חדשה')).toBeTruthy();
+    expect(screen.queryByLabelText('התראות, 1 חדשות')).toBeNull();
+  });
+
   it('updates the badge when the unread count changes', async () => {
     useStore.setState({ notifications: [notification({ id: 'n1', unread: true })] });
     await render(<TabBar active="map" />);

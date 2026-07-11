@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Pressable, StyleSheet, Alert, Platform } from 'react-native';
+import { AccessibilityInfo, View, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown, ZoomIn, FadeOut, LinearTransition, LayoutAnimationConfig, useReducedMotion } from 'react-native-reanimated';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
@@ -111,6 +111,8 @@ export default function CircleDetail() {
     // fill/check/burst play; the chat icon beside it opens the chat.
     joinCircle(circle.id);
     haptic.success();
+    // spec 02: announce the join for screen readers ("הצטרפת — 4 מתוך 4").
+    AccessibilityInfo.announceForAccessibility(`הצטרפת — ${circle.players.length + 1} מתוך ${circle.capacity}`);
     if (!reduced) setBurst((n) => n + 1);
   };
 

@@ -1,5 +1,20 @@
 import { render, screen } from '@testing-library/react-native';
-import { MapMarker } from '../MapMarker';
+import { MapMarker, markerA11yLabel } from '../MapMarker';
+
+describe('markerA11yLabel', () => {
+  it('announces live state + count as "N מתוך M"', () => {
+    expect(markerA11yLabel('live', '3/4')).toBe('מעגל חי, 3 מתוך 4');
+  });
+  it('announces a missing-player circle', () => {
+    expect(markerA11yLabel('missing', '2/4')).toBe('חסר שחקן, 2 מתוך 4');
+  });
+  it('labels a tournament plainly', () => {
+    expect(markerA11yLabel('tournament', '3/8')).toBe('טורניר');
+  });
+  it('omits the count when none is given', () => {
+    expect(markerA11yLabel('live')).toBe('מעגל חי');
+  });
+});
 
 // MarkerState = 'live' | 'missing' | 'tournament' | 'neutral' (see MapMarker.tsx).
 describe('MapMarker', () => {
