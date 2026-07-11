@@ -12,6 +12,9 @@
       "bundleIdentifier": "com.anonymous.MeKasaApp",
       "entitlements": {
         "com.apple.developer.usernotifications.time-sensitive": true
+      },
+      "infoPlist": {
+        "NSSupportsLiveActivities": true
       }
     },
     "android": {
@@ -43,7 +46,8 @@
         {
           "color": "#FF6B2C"
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ]
   }
 }
