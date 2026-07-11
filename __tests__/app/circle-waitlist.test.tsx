@@ -133,6 +133,27 @@ describe('CircleWaitlist screen', () => {
     expect(screen.queryByText('בינתיים, ממש קרוב:')).toBeNull();
   });
 
+  it('shows the claim countdown when a spot opens while the user is first in line (spec 04)', async () => {
+    // A spot freed up: only 3 of 4 seats taken, and the user leads the waitlist.
+    const circle = makeFullCircle([makePlayer(userId, 'אני'), makePlayer('w2', 'שני')], {
+      players: [makePlayer('p1', 'דנה'), makePlayer('p2', 'עידו'), makePlayer('p3', 'רון')],
+      state: 'missing',
+    });
+    useStore.setState({ circles: [circle] });
+    await render(<CircleWaitlist />);
+
+    expect(screen.getByText('מקום התפנה — הוא שלך!')).toBeTruthy();
+    expect(screen.getByText('תפוס עכשיו')).toBeTruthy();
+  });
+
+  it('does not show the claim countdown while the circle is still full', async () => {
+    useStore.setState({
+      circles: [makeFullCircle([makePlayer(userId, 'אני')])],
+    });
+    await render(<CircleWaitlist />);
+    expect(screen.queryByText('מקום התפנה — הוא שלך!')).toBeNull();
+  });
+
   it('shows the not-found state and navigates to /map when the id does not resolve', async () => {
     mockParams = { id: 'does-not-exist' };
     useStore.setState({

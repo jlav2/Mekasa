@@ -26,3 +26,11 @@ jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock
 // itself instead of hand-duplicated. react-native-maps has no such official
 // mock; see __mocks__/react-native-maps.tsx (applied automatically).
 require('expo-router/testing-library');
+
+// The reanimated mock (applied just above) deliberately omits useReducedMotion
+// ("ADD ME IF NEEDED" in its source). src/theme/motion.ts's usePressScale calls
+// it, so patch it onto the already-mocked module — default to motion-enabled.
+const Reanimated = require('react-native-reanimated');
+if (typeof Reanimated.useReducedMotion !== 'function') {
+  Reanimated.useReducedMotion = () => false;
+}

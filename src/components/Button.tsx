@@ -10,6 +10,7 @@ import {
 import Animated from 'react-native-reanimated';
 import { Txt } from './Txt';
 import { colors, fonts, shadows } from '../theme';
+import { usePressScale } from '../theme/motion';
 
 type Variant =
   | 'primary' // sunset fill + glow — THE cta
@@ -80,27 +81,33 @@ export function Button({
 }) {
   const h = heights[size];
   const glow = variant === 'primary' ? shadows.cta : undefined;
-  const [pressed, setPressed] = useState(false);
   const [hovered, setHovered] = useState(false);
+  // Spec 01: press-in scale→0.96 @80ms + haptic.light, spring release. The
+  // shared-value scale replaces the old CSS-transition transform; hover opacity
+  // stays a web-only CSS transition (native has no hover).
+  const press = usePressScale();
   return (
     <AnimatedPressable
       onPress={onPress}
       disabled={disabled || loading}
-      onPressIn={() => setPressed(true)}
-      onPressOut={() => setPressed(false)}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
+      // hitSlop pads small buttons (h=40) up to the ≥44pt touch target.
+      hitSlop={size === 'sm' ? { top: 2, bottom: 2, left: 2, right: 2 } : undefined}
       style={[
         styles.base,
         { height: h, borderRadius: h / 2 },
         full && { alignSelf: 'stretch' },
         fills[variant],
         glow,
+        press.style,
         {
-          transform: [{ scale: pressed ? 0.97 : 1 }],
-          opacity: disabled ? 0.5 : pressed ? 0.9 : hovered ? 0.92 : 1,
-          transitionProperty: ['transform', 'opacity'],
-          transitionDuration: 90,
+          opacity: disabled ? 0.5 : hovered ? 0.92 : 1,
+          ...(Platform.OS === 'web'
+            ? { transitionProperty: ['opacity'], transitionDuration: 90 }
+            : null),
         },
         Platform.OS === 'web' && { cursor: disabled || loading ? 'default' : 'pointer' },
         style,

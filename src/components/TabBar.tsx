@@ -5,6 +5,8 @@ import Svg, { Circle } from 'react-native-svg';
 import { Txt } from './Txt';
 import { Icon } from './icons';
 import { colors, fonts, shadows } from '../theme';
+import { haptic } from '../theme/motion';
+import { AnimatedTabIcon, TabBadge } from './TabMotion';
 
 import { useStore } from '../store';
 
@@ -54,18 +56,21 @@ export function TabBar({ active }: { active: TabKey }) {
             <Pressable
               key={t.key}
               style={[styles.tab, Platform.OS === 'web' && { cursor: 'pointer' }]}
-              onPress={() => !isActive && router.replace(t.route as any)}
+              onPress={() => {
+                if (!isActive) {
+                  haptic.selection();
+                  router.replace(t.route as any);
+                }
+              }}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={badge > 0 ? `${t.label}, ${badge} חדשות` : t.label}
             >
               <View>
-                <TabIcon tab={t.key} active={isActive} />
-                {badge > 0 ? (
-                  <View style={styles.badge}>
-                    <Txt style={{ color: '#fff', fontSize: 11, fontFamily: fonts.extrabold }}>{badge}</Txt>
-                  </View>
-                ) : null}
+                <AnimatedTabIcon active={isActive}>
+                  <TabIcon tab={t.key} active={isActive} />
+                </AnimatedTabIcon>
+                {badge > 0 ? <TabBadge count={badge} /> : null}
               </View>
               <Txt
                 style={{
@@ -102,16 +107,4 @@ const styles = StyleSheet.create({
     ...shadows.tabBar,
   },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  badge: {
-    position: 'absolute',
-    top: -5,
-    left: -8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.sunset,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
 });

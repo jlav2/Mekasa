@@ -12,6 +12,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Txt } from './Txt';
 import { Icon } from './icons';
 import { colors, fonts, radii, shadows, avatarPalette, proGradient } from '../theme';
+import { usePressScale, haptic, PRESS_SCALE } from '../theme/motion';
+
+// Spec 01: shared pressables get the standard press-in scale + spring release.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /* ---------------- Card ---------------- */
 export function Card({
@@ -114,14 +118,22 @@ export function Chip({
   style?: ViewStyle;
   filledColor?: string;
 }) {
+  // Chip is a selection surface (vocabulary: chips → haptic.selection), so the
+  // scale carries no light haptic; the selection buzz fires on actual press.
+  const press = usePressScale(PRESS_SCALE, false);
+  const interactive = !!onPress;
   return (
-    <Pressable
-      onPress={onPress}
+    <AnimatedPressable
+      onPress={onPress ? () => { haptic.selection(); onPress(); } : undefined}
+      onPressIn={interactive ? press.onPressIn : undefined}
+      onPressOut={interactive ? press.onPressOut : undefined}
+      hitSlop={4}
       style={[
         styles.chip,
         active
           ? { backgroundColor: filledColor }
           : { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.hairlineStrong },
+        interactive && press.style,
         Platform.OS === 'web' && { cursor: 'pointer' },
         style,
       ]}
@@ -137,7 +149,7 @@ export function Chip({
         {label}
       </Txt>
       {trailing}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -271,7 +283,19 @@ const haloPulse = {
   '100%': { transform: [{ scale: 1.7 }], opacity: 0 },
 };
 
-export function PulseHalo({ color = colors.live, size = 44, style }: { color?: string; size?: number; style?: ViewStyle }) {
+// Spec 03: live ring pulse — scale 0.85→1.7, opacity 0.75→0, 2.2s ease-out,
+// infinite. Reduce Motion collapses it to a static halo (no loop).
+export function PulseHalo({
+  color = colors.live,
+  size = 44,
+  animate = true,
+  style,
+}: {
+  color?: string;
+  size?: number;
+  animate?: boolean;
+  style?: ViewStyle;
+}) {
   return (
     <Animated.View
       pointerEvents="none"
@@ -282,11 +306,15 @@ export function PulseHalo({ color = colors.live, size = 44, style }: { color?: s
           height: size,
           borderRadius: size / 2,
           backgroundColor: color,
-          animationName: haloPulse,
-          animationDuration: '2000ms',
-          animationIterationCount: 'infinite',
-          animationTimingFunction: 'ease-out',
         },
+        animate
+          ? {
+              animationName: haloPulse,
+              animationDuration: '2200ms',
+              animationIterationCount: 'infinite',
+              animationTimingFunction: 'ease-out',
+            }
+          : { transform: [{ scale: 1.3 }], opacity: 0.18 },
         style,
       ]}
     />
@@ -294,6 +322,37 @@ export function PulseHalo({ color = colors.live, size = 44, style }: { color?: s
 }
 
 /* ---------------- SegmentedControl ---------------- */
+function SegItem({
+  label,
+  active,
+  activeColor,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  activeColor: string;
+  onPress: () => void;
+}) {
+  const press = usePressScale(0.97, false);
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
+      style={[
+        styles.segmentItem,
+        active && { backgroundColor: activeColor, ...shadows.card },
+        press.style,
+        Platform.OS === 'web' && { cursor: 'pointer' },
+      ]}
+    >
+      <Txt style={{ fontFamily: active ? fonts.extrabold : fonts.semibold, fontSize: 13.5, color: active ? '#fff' : colors.muted }}>
+        {label}
+      </Txt>
+    </AnimatedPressable>
+  );
+}
+
 export function SegmentedControl({
   options,
   value,
@@ -309,24 +368,15 @@ export function SegmentedControl({
 }) {
   return (
     <View style={[styles.segment, style]}>
-      {options.map((o, i) => {
-        const active = i === value;
-        return (
-          <Pressable
-            key={o}
-            onPress={() => onChange?.(i)}
-            style={[
-              styles.segmentItem,
-              active && { backgroundColor: activeColor, ...shadows.card },
-              Platform.OS === 'web' && { cursor: 'pointer' },
-            ]}
-          >
-            <Txt style={{ fontFamily: active ? fonts.extrabold : fonts.semibold, fontSize: 13.5, color: active ? '#fff' : colors.muted }}>
-              {o}
-            </Txt>
-          </Pressable>
-        );
-      })}
+      {options.map((o, i) => (
+        <SegItem
+          key={o}
+          label={o}
+          active={i === value}
+          activeColor={activeColor}
+          onPress={() => { haptic.selection(); onChange?.(i); }}
+        />
+      ))}
     </View>
   );
 }
@@ -350,7 +400,7 @@ export function Toggle({ value, onChange, onColor = colors.live }: { value: bool
   const [on, setOn] = useState(value);
   useEffect(() => setOn(value), [value]); // stay in sync when used as a controlled prop
   return (
-    <Pressable onPress={() => { setOn(!on); onChange?.(!on); }}>
+    <Pressable onPress={() => { haptic.selection(); setOn(!on); onChange?.(!on); }}>
       <Animated.View
         style={{
           width: 52,
@@ -384,7 +434,12 @@ export function Toggle({ value, onChange, onColor = colors.live }: { value: bool
 export function Stepper({ value, onChange, min = 0, max = 9 }: { value: number; onChange?: (v: number) => void; min?: number; max?: number }) {
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]); // stay in sync when used as a controlled prop
-  const set = (n: number) => { const c = Math.max(min, Math.min(max, n)); setV(c); onChange?.(c); };
+  const set = (n: number) => {
+    const c = Math.max(min, Math.min(max, n));
+    if (c !== v) haptic.selection(); // picker → selection buzz only on a real change
+    setV(c);
+    onChange?.(c);
+  };
   return (
     <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 14 }}>
       <Pressable onPress={() => set(v - 1)} style={[styles.stepBtn, { borderColor: colors.hairlineStrong }]}>
@@ -405,11 +460,17 @@ export function Divider({ style }: { style?: ViewStyle }) {
 
 /* ---------------- Row (RTL list row) ---------------- */
 export function Row({ children, style, gap = 12, onPress }: { children: ReactNode; style?: ViewStyle; gap?: number; onPress?: () => void }) {
+  const press = usePressScale();
   const content = <View style={[{ flexDirection: 'row-reverse', alignItems: 'center', gap }, style]}>{children}</View>;
   return onPress ? (
-    <Pressable onPress={onPress} style={Platform.OS === 'web' && { cursor: 'pointer' }}>
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
+      style={[press.style, Platform.OS === 'web' && { cursor: 'pointer' }]}
+    >
       {content}
-    </Pressable>
+    </AnimatedPressable>
   ) : (
     content
   );
@@ -435,11 +496,17 @@ export function HeroIconButton({
     variant === 'card'
       ? { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.hairlineStrong }
       : { backgroundColor: 'rgba(255,255,255,.14)' };
+  const press = usePressScale();
+  // Pad sub-44 targets up to the 44pt minimum via hitSlop.
+  const slop = size < 44 ? (44 - size) / 2 : 0;
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      hitSlop={slop}
       style={[
         {
           width: size,
@@ -449,12 +516,13 @@ export function HeroIconButton({
           justifyContent: 'center',
         },
         fill,
+        press.style,
         Platform.OS === 'web' && { cursor: 'pointer' },
         style,
       ]}
     >
       {children}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

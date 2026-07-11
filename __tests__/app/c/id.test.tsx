@@ -73,7 +73,7 @@ beforeEach(() => {
 });
 
 describe('CircleDetail screen', () => {
-  it('not joined + room available: shows the join CTA, and pressing it joins the circle and opens chat', async () => {
+  it('not joined + room available: pressing the join CTA joins in place — the button becomes the confirmation, no auto-navigation (spec 02)', async () => {
     const circle = buildCircle({ id: 'c-open', capacity: 4, players: [makePlayer('p1', 'עומר'), makePlayer('p2', 'דניאל')] });
     useStore.setState({ circles: [circle] });
     await render(<CircleDetail />);
@@ -83,10 +83,12 @@ describe('CircleDetail screen', () => {
 
     const updated = useStore.getState().circleById('c-open');
     expect(updated?.players.some((p) => p.id === userId)).toBe(true);
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/chat', params: { circle: 'c-open' } });
+    // The CTA itself confirms the join — it must NOT navigate away.
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(await screen.findByText('את/ה בפנים!')).toBeTruthy();
   });
 
-  it('already joined: CTA opens chat directly without rejoining', async () => {
+  it('already joined: CTA reads as confirmed and opens chat when tapped', async () => {
     const circle = buildCircle({
       id: 'c-joined',
       hostId: 'p1',
@@ -97,8 +99,8 @@ describe('CircleDetail screen', () => {
     useStore.setState({ circles: [circle] });
     await render(<CircleDetail />);
 
-    expect(screen.getByText('אתה בפנים ✓ — פתח צ׳אט')).toBeTruthy();
-    fireEvent.press(screen.getByText('אתה בפנים ✓ — פתח צ׳אט'));
+    expect(screen.getByText('את/ה בפנים!')).toBeTruthy();
+    fireEvent.press(screen.getByText('את/ה בפנים!'));
 
     const updated = useStore.getState().circleById('c-joined');
     // no duplicate join — still exactly the two original players

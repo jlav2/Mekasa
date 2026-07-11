@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
+import { PullToRefresh } from './PullToRefresh';
 
 // App-content screen wrapper. Device chrome (status bar area, home indicator) is
 // handled by safe-area insets; we do NOT draw bezels/gesture nav (per handoff).
@@ -20,6 +21,7 @@ export function Screen({
   padded = true,
   edges = { top: true, bottom: true },
   keyboardAvoiding = false,
+  onRefresh,
   style,
   contentStyle,
 }: {
@@ -29,6 +31,7 @@ export function Screen({
   padded?: boolean;
   edges?: { top?: boolean; bottom?: boolean };
   keyboardAvoiding?: boolean; // lift content above the on-screen keyboard (forms)
+  onRefresh?: () => void | Promise<void>; // scroll screens: enables pull-to-refresh (spec 08)
   style?: ViewStyle;
   contentStyle?: ViewStyle;
 }) {
@@ -55,13 +58,19 @@ export function Screen({
     return (
       <View style={[{ flex: 1, backgroundColor: bg }, style]}>
         {kav(
-          <ScrollView
-            contentContainerStyle={[pad, contentStyle]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {children}
-          </ScrollView>,
+          onRefresh ? (
+            <PullToRefresh onRefresh={onRefresh} contentContainerStyle={[pad, contentStyle]}>
+              {children}
+            </PullToRefresh>
+          ) : (
+            <ScrollView
+              contentContainerStyle={[pad, contentStyle]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {children}
+            </ScrollView>
+          ),
         )}
       </View>
     );

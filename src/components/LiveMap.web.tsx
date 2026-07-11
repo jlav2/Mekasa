@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import type MapLibreGL from 'maplibre-gl';
 import { MapMarker } from './MapMarker';
 import { colors } from '../theme';
+import { haptic } from '../theme/motion';
 import { TLV_COAST, USER_LOCATION, CIRCLE_MARKERS } from '../data/beaches';
 import type { LiveMapProps } from './LiveMap.types';
 
@@ -187,7 +188,13 @@ export function LiveMap({
       {markers.map((m) =>
         markerEls[m.id]
           ? createPortal(
-              <Pressable onPress={() => onMarkerPress?.(m)} style={{ cursor: 'pointer' } as any}>
+              <Pressable
+                onPress={() => {
+                  haptic.medium(); // spec 03: marker select (no-op on web)
+                  onMarkerPress?.(m);
+                }}
+                style={{ cursor: 'pointer' } as any}
+              >
                 <MapMarker
                   state={m.state}
                   size={m.size}

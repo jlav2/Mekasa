@@ -1,5 +1,6 @@
 import { memo, ReactNode } from 'react';
 import { View, ViewStyle } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SandRing } from './SandRing';
 import { PulseHalo } from './ui';
 import { Txt } from './Txt';
@@ -34,9 +35,10 @@ function MapMarkerBase({
   style?: ViewStyle;
 }) {
   const color = stateColor[state];
+  const reduced = useReducedMotion();
   return (
     <View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
-      {state === 'live' && <PulseHalo color={color} size={size} />}
+      {state === 'live' && <PulseHalo color={color} size={size} animate={!reduced} />}
       <SandRing size={size} color={color} strokeWidth={3.5} variant={variant} rotate={rotate} fill="rgba(255,253,246,0.92)">
         <Content state={state} count={count} label={label} color={color} size={size} />
       </SandRing>

@@ -1,10 +1,11 @@
 import { Platform, View, Pressable, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { Txt, Icon, OfflineBanner, Toast } from '../../src/components';
+import { AnimatedTabIcon, TabBadge } from '../../src/components/TabMotion';
 import { colors, fonts, shadows } from '../../src/theme';
+import { haptic } from '../../src/theme/motion';
 import { useStore } from '../../src/store';
 
 const TAB_META: Record<string, { label: string; icon: 'map' | 'users' | 'bell' | 'settings' }> = {
@@ -66,29 +67,21 @@ function PillTabBar({ state, navigation }: PillTabBarProps) {
               style={[styles.tab, Platform.OS === 'web' && { cursor: 'pointer' }]}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
-              accessibilityLabel={meta.label}
+              accessibilityLabel={badge > 0 ? `${meta.label}, ${badge} חדשות` : meta.label}
               onPress={() => {
                 const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                 if (!isActive && !event.defaultPrevented) {
+                  haptic.selection();
                   navigation.navigate(route.name);
                 }
               }}
             >
-              <Animated.View
-                style={{
-                  transform: [{ scale: isActive ? 1.12 : 1 }, { translateY: isActive ? -1 : 0 }],
-                  transitionProperty: 'transform',
-                  transitionDuration: 180,
-                  transitionTimingFunction: 'ease-out',
-                }}
-              >
-                <TabIcon icon={meta.icon} active={isActive} />
-                {badge > 0 ? (
-                  <Animated.View entering={ZoomIn.duration(200)} exiting={ZoomOut.duration(150)} style={styles.badge}>
-                    <Txt style={{ color: '#fff', fontSize: 11, fontFamily: fonts.extrabold }}>{badge}</Txt>
-                  </Animated.View>
-                ) : null}
-              </Animated.View>
+              <View style={{ transform: [{ translateY: isActive ? -1 : 0 }] }}>
+                <AnimatedTabIcon active={isActive}>
+                  <TabIcon icon={meta.icon} active={isActive} />
+                </AnimatedTabIcon>
+                {badge > 0 ? <TabBadge count={badge} /> : null}
+              </View>
               <Txt
                 style={{
                   fontSize: 10.5,
@@ -142,16 +135,4 @@ const styles = StyleSheet.create({
     ...shadows.tabBar,
   },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  badge: {
-    position: 'absolute',
-    top: -5,
-    left: -8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.sunset,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
 });

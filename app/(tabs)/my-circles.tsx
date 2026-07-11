@@ -15,6 +15,8 @@ import {
   RingBadge,
   Icon,
   Skeleton,
+  Reveal,
+  useDelayedFlag,
 } from '../../src/components';
 import { colors, fonts } from '../../src/theme';
 import { useStore } from '../../src/store';
@@ -94,11 +96,19 @@ export default function MyCircles() {
     else setTab(0);
   };
 
-  if (loading) return <MyCirclesSkeleton />;
+  // Spec 08: pull-to-refresh. Realtime keeps this list live; the gesture is the
+  // expected affordance and re-syncs on demand (no-op against the fixture seed).
+  const onRefresh = () => {};
+
+  // Spec 06: only surface the skeleton once loading crosses 250ms; a fast fetch
+  // shows content directly (sand chrome fills the sub-threshold grace window).
+  const showSkeleton = useDelayedFlag(loading, 250);
+  if (loading && !showSkeleton) return <View style={{ flex: 1, backgroundColor: colors.sandBg }} />;
+  if (showSkeleton) return <MyCirclesSkeleton />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
-      <Screen scroll contentStyle={{ paddingBottom: 120, paddingTop: 24 }}>
+      <Screen scroll onRefresh={onRefresh} contentStyle={{ paddingBottom: 120, paddingTop: 24 }}>
         <Txt style={{ fontFamily: fonts.displayBold, fontSize: 56, lineHeight: 56, color: colors.petrol }}>
           המעגלים שלי
         </Txt>
@@ -114,16 +124,17 @@ export default function MyCircles() {
           <EmptyState onPress={() => router.push('/map')} />
         ) : (
           <View style={{ gap: 10, marginTop: 16 }}>
-            {liveNow.map((c) => (
-              <LiveCard
-                key={c.id}
-                circle={c}
-                onChat={() => router.push({ pathname: '/chat', params: { circle: c.id } })}
-                onOpen={() => router.push({ pathname: '/c/[id]', params: { id: c.id } })}
-              />
+            {liveNow.map((c, i) => (
+              <Reveal key={c.id} index={i}>
+                <LiveCard
+                  circle={c}
+                  onChat={() => router.push({ pathname: '/chat', params: { circle: c.id } })}
+                  onOpen={() => router.push({ pathname: '/c/[id]', params: { id: c.id } })}
+                />
+              </Reveal>
             ))}
 
-            {upcoming.map((c) => {
+            {upcoming.map((c, i) => {
               const isHost = c.hostId === user.id;
               const missing = c.capacity - c.players.length;
               const scheduled = c.state === 'scheduled';
@@ -131,27 +142,28 @@ export default function MyCircles() {
                 `${c.startLabel} · ${isHost ? 'פתחת את המעגל' : 'הצטרפת'}` +
                 (missing > 0 ? ` · חסרים ${missing}` : '');
               return (
-                <UpcomingRow
-                  key={c.id}
-                  ringColor={scheduled ? colors.live : colors.sunset}
-                  ringRotate={scheduled ? 80 : -70}
-                  center={
-                    <Txt style={{ fontSize: 11, fontFamily: fonts.extrabold, color: '#fff' }}>
-                      {c.players.length}/{c.capacity}
-                    </Txt>
-                  }
-                  centerBg={scheduled ? colors.live : colors.sunset}
-                  title={`${c.sportLabel} · ${c.beachName}`}
-                  meta={meta}
-                  badge={
-                    isHost ? (
-                      <Badge label="שלך" bg="rgba(255,107,44,.12)" color={colors.sunsetDeep} />
-                    ) : (
-                      <Badge label="קרוב" bg={colors.chipBg} color={colors.petrol} />
-                    )
-                  }
-                  onPress={() => router.push({ pathname: '/c/[id]', params: { id: c.id } })}
-                />
+                <Reveal key={c.id} index={liveNow.length + i}>
+                  <UpcomingRow
+                    ringColor={scheduled ? colors.live : colors.sunset}
+                    ringRotate={scheduled ? 80 : -70}
+                    center={
+                      <Txt style={{ fontSize: 11, fontFamily: fonts.extrabold, color: '#fff' }}>
+                        {c.players.length}/{c.capacity}
+                      </Txt>
+                    }
+                    centerBg={scheduled ? colors.live : colors.sunset}
+                    title={`${c.sportLabel} · ${c.beachName}`}
+                    meta={meta}
+                    badge={
+                      isHost ? (
+                        <Badge label="שלך" bg="rgba(255,107,44,.12)" color={colors.sunsetDeep} />
+                      ) : (
+                        <Badge label="קרוב" bg={colors.chipBg} color={colors.petrol} />
+                      )
+                    }
+                    onPress={() => router.push({ pathname: '/c/[id]', params: { id: c.id } })}
+                  />
+                </Reveal>
               );
             })}
 

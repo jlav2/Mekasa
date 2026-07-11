@@ -16,8 +16,11 @@ export default function Recurring() {
     if (i === 2) router.push('/history');
   };
 
+  // Spec 08: pull-to-refresh (re-syncs recurring templates in production).
+  const onRefresh = () => {};
+
   return (
-    <Screen scroll contentStyle={{ paddingBottom: 120 }}>
+    <Screen scroll onRefresh={onRefresh} contentStyle={{ paddingBottom: 120 }}>
       <Txt style={{ fontFamily: fonts.displayBold, fontSize: 56, lineHeight: 56, color: colors.petrol, marginTop: 8 }}>
         המעגלים שלי
       </Txt>
