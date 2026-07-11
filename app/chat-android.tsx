@@ -1,6 +1,7 @@
 import { View, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Animated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { Txt, Icon, RingBadge, HeroIconButton } from '../src/components';
 import { colors, fonts } from '../src/theme';
@@ -106,9 +107,12 @@ function OutgoingBubble({ m }: { m: Msg }) {
         <Txt style={styles.outgoingText}>{m.text}</Txt>
         <View style={styles.outgoingMeta}>
           <Txt style={styles.outgoingTime}>{m.time}</Txt>
-          <Svg width={13} height={8} viewBox="0 0 16 10">
-            <Path d="M1 5l3 3 6-7M7 8l2 0.5 6-7.5" fill="none" stroke={colors.live} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
+          {/* spec 05: read receipt fades in */}
+          <Animated.View entering={FadeIn.duration(160)}>
+            <Svg width={13} height={8} viewBox="0 0 16 10">
+              <Path d="M1 5l3 3 6-7M7 8l2 0.5 6-7.5" fill="none" stroke={colors.live} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </Animated.View>
         </View>
       </View>
     </View>
@@ -118,6 +122,7 @@ function OutgoingBubble({ m }: { m: Msg }) {
 export default function ChatAndroid() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const reduced = useReducedMotion();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.sandBg }}>
@@ -149,11 +154,25 @@ export default function ChatAndroid() {
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
       >
-        {MESSAGES.map((m) => {
-          if (m.kind === 'join') return <JoinBubble key={m.id} text={m.text} />;
-          if (m.kind === 'milestone') return <MilestoneBubble key={m.id} text={m.text} />;
-          if (m.kind === 'out') return <OutgoingBubble key={m.id} m={m} />;
-          return <IncomingBubble key={m.id} m={m} />;
+        {MESSAGES.map((m, i) => {
+          let bubble: React.ReactNode;
+          if (m.kind === 'join') bubble = <JoinBubble text={m.text} />;
+          else if (m.kind === 'milestone') bubble = <MilestoneBubble text={m.text} />;
+          else if (m.kind === 'out') bubble = <OutgoingBubble m={m} />;
+          else bubble = <IncomingBubble m={m} />;
+          return (
+            <Animated.View
+              key={m.id}
+              // spec 05: bubbles spring in (staggered here since this is a static showcase)
+              entering={
+                reduced
+                  ? FadeIn.duration(160)
+                  : FadeInDown.springify().damping(16).stiffness(220).delay(Math.min(i, 5) * 60)
+              }
+            >
+              {bubble}
+            </Animated.View>
+          );
         })}
       </ScrollView>
 

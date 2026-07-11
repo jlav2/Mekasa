@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { View, Pressable, StyleSheet, Alert, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import Animated, { ZoomIn, FadeOut, LinearTransition, LayoutAnimationConfig } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, ZoomIn, FadeOut, LinearTransition, LayoutAnimationConfig, useReducedMotion } from 'react-native-reanimated';
 import Svg, { Circle as SvgCircle, Path as SvgPath } from 'react-native-svg';
-import { Screen, Txt, Icon, SandRing, DecorRing, HeroIconButton, StatusDot, Button } from '../../src/components';
-import { colors, fonts, shadows } from '../../src/theme';
+import { Screen, Txt, Icon, SandRing, DecorRing, HeroIconButton, StatusDot, Button, JoinCTA, ParticleBurst } from '../../src/components';
+import { colors, fonts } from '../../src/theme';
+import { haptic } from '../../src/theme/motion';
 import { useStore } from '../../src/store';
 
 const RING_ROTATIONS = [0, 60, 150, 230];
@@ -55,6 +57,10 @@ export default function CircleDetail() {
   const joinWaitlist = useStore((s) => s.joinWaitlist);
   const waitlisted = useStore((s) => s.isWaitlisted(id ?? ''));
   const userId = useStore((s) => s.user.id);
+  const reduced = useReducedMotion();
+  // Spec 02: particle-burst trigger — bumped on each fresh join (see onJoin) so
+  // the burst component remounts and replays.
+  const [burst, setBurst] = useState(0);
 
   if (!circle) return <NotFound />;
 
@@ -77,6 +83,11 @@ export default function CircleDetail() {
 
   const missing = circle.capacity - circle.players.length;
   const full = missing === 0;
+  const countText = full
+    ? `${circle.players.length}/${circle.capacity} — מלא. משחקים!`
+    : missing === 1
+      ? `${circle.players.length} מתוך ${circle.capacity} — חסר אחד!`
+      : `${circle.players.length} מתוך ${circle.capacity} — חסרים ${missing}`;
 
   const stateBadge = joined
     ? { bg: colors.live, label: circle.state === 'scheduled' ? 'אתה בפנים' : 'משחק חי · אתה בפנים' }
@@ -91,13 +102,16 @@ export default function CircleDetail() {
   const waitlistRoute = () => router.push({ pathname: '/circle-waitlist', params: { id: circle.id } });
 
   const onJoin = () => {
-    if (joined) return openChat();
+    if (joined) return openChat(); // already in → CTA doubles as a chat entry
     if (full) {
       if (!waitlisted) joinWaitlist(circle.id);
       return waitlistRoute();
     }
+    // Spec 02: the button becomes the confirmation — stay on screen so the
+    // fill/check/burst play; the chat icon beside it opens the chat.
     joinCircle(circle.id);
-    openChat();
+    haptic.success();
+    if (!reduced) setBurst((n) => n + 1);
   };
 
   return (
@@ -138,24 +152,30 @@ export default function CircleDetail() {
         <View>
           <View style={styles.playersHeader}>
             <Txt style={styles.playersTitle}>שחקנים במעגל</Txt>
-            <Txt style={[styles.playersCount, full && { color: colors.liveDeep }]}>
-              {full
-                ? `${circle.players.length}/${circle.capacity} — מלא. משחקים!`
-                : missing === 1
-                  ? `${circle.players.length} מתוך ${circle.capacity} — חסר אחד!`
-                  : `${circle.players.length} מתוך ${circle.capacity} — חסרים ${missing}`}
-            </Txt>
+            {/* spec 02: count ticker — the value slides/fades when it changes */}
+            <Animated.View key={countText} entering={reduced ? FadeIn.duration(160) : FadeInDown.duration(200)}>
+              <Txt style={[styles.playersCount, full && { color: colors.liveDeep }]}>{countText}</Txt>
+            </Animated.View>
           </View>
           {/* skipEntering: only a mid-session join animates in, not the initial roster */}
           <LayoutAnimationConfig skipEntering>
             <Animated.View style={styles.playersRow} layout={LinearTransition.duration(250)}>
               {circle.players.map((p, i) => (
-                <Animated.View key={p.id} entering={ZoomIn.duration(250)} style={styles.playerCol}>
-                  <SandRing size={64} color={colors.live} strokeWidth={2.5} rotate={RING_ROTATIONS[i % RING_ROTATIONS.length]} variant={1}>
-                    <View style={[styles.playerAvatar, { backgroundColor: p.avatarColor }]}>
-                      <Txt style={styles.playerAvatarTxt}>{p.avatarInitial}</Txt>
-                    </View>
-                  </SandRing>
+                <Animated.View
+                  key={p.id}
+                  // spec 02: joining avatar pops in with a spring overshoot
+                  entering={reduced ? ZoomIn.duration(200) : ZoomIn.springify().damping(14).stiffness(180)}
+                  style={styles.playerCol}
+                >
+                  <View>
+                    <SandRing size={64} color={colors.live} strokeWidth={2.5} rotate={RING_ROTATIONS[i % RING_ROTATIONS.length]} variant={1}>
+                      <View style={[styles.playerAvatar, { backgroundColor: p.avatarColor }]}>
+                        <Txt style={styles.playerAvatarTxt}>{p.avatarInitial}</Txt>
+                      </View>
+                    </SandRing>
+                    {/* spec 02: burst radiates from your avatar when you join */}
+                    {p.id === userId && burst > 0 ? <ParticleBurst key={burst} /> : null}
+                  </View>
                   <Txt style={styles.playerName}>{p.name}</Txt>
                   {p.id === circle.hostId && <Txt style={styles.playerHost}>מארח</Txt>}
                 </Animated.View>
@@ -224,21 +244,21 @@ export default function CircleDetail() {
 
       {/* footer */}
       <View style={styles.footer}>
-        <Pressable
-          style={[styles.cta, joined && { backgroundColor: colors.live, shadowColor: colors.live }, full && !joined && { backgroundColor: colors.petrol, shadowColor: colors.petrol }]}
-          onPress={onJoin}
-        >
-          <Txt style={styles.ctaTxt}>
-            {joined
-              ? 'אתה בפנים ✓ — פתח צ׳אט'
+        <JoinCTA
+          label={
+            joined
+              ? 'את/ה בפנים!'
               : full
                 ? waitlisted
                   ? 'ברשימת ההמתנה ✓ — צפה'
                   : 'המעגל מלא — לרשימת ההמתנה'
-                : 'אני בפנים'}
-          </Txt>
-        </Pressable>
-        <Pressable style={styles.shareBtn} onPress={openChat}>
+                : 'אני בפנים'
+          }
+          celebrate={joined}
+          baseColor={full && !joined ? colors.petrol : colors.sunset}
+          onPress={onJoin}
+        />
+        <Pressable style={styles.shareBtn} onPress={openChat} accessibilityRole="button" accessibilityLabel="פתח צ׳אט">
           <Icon name="chat" size={20} color={colors.petrol} strokeWidth={1.7} />
         </Pressable>
       </View>
@@ -320,16 +340,6 @@ const styles = StyleSheet.create({
   },
   noteTxt: { flex: 1, fontSize: 13, color: colors.liveDeep, fontFamily: fonts.semibold, lineHeight: 18 },
   footer: { flexDirection: 'row-reverse', gap: 10, paddingHorizontal: 22, paddingTop: 14, paddingBottom: 44 },
-  cta: {
-    flex: 1,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: colors.sunset,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.cta,
-  },
-  ctaTxt: { fontFamily: fonts.extrabold, fontSize: 17, color: '#fff' },
   shareBtn: {
     width: 58,
     height: 58,

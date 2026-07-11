@@ -67,8 +67,12 @@ export default function History() {
     if (i === 1) router.push('/recurring');
   };
 
+  // Spec 08: pull-to-refresh. History is fixture data here; in production this
+  // re-fetches the played-circles history from the backend.
+  const onRefresh = () => {};
+
   return (
-    <Screen scroll contentStyle={{ paddingBottom: 120 }}>
+    <Screen scroll onRefresh={onRefresh} contentStyle={{ paddingBottom: 120 }}>
       <Txt style={{ fontFamily: fonts.displayBold, fontSize: 56, lineHeight: 56, color: colors.petrol, marginTop: 8 }}>
         המעגלים שלי
       </Txt>

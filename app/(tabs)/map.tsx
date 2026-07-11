@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppState as RNAppState, Linking, Platform, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { markersFromCircles } from '../../src/data/beaches';
 import {
@@ -16,8 +16,10 @@ import {
   Icon,
   MapCanvas,
   Skeleton,
+  useDelayedFlag,
 } from '../../src/components';
 import { colors, fonts, shadows } from '../../src/theme';
+import { haptic } from '../../src/theme/motion';
 import { useStore, matchesLevel } from '../../src/store';
 
 function Dot({ color }: { color: string }) {
@@ -196,13 +198,27 @@ export default function Map() {
   const joinCircle = useStore((s) => s.joinCircle);
   const missing = featured ? featured.capacity - featured.players.length : 0;
 
+  const reducedMotion = useReducedMotion();
+
   const onJoin = () => {
     if (!featured) return;
-    if (!joined) joinCircle(featured.id);
+    if (!joined) {
+      joinCircle(featured.id);
+      haptic.success(); // spec 02: joined a circle
+    }
     router.push({ pathname: '/chat', params: { circle: featured.id } });
   };
 
-  if (loading) return <MapLoadingSkeleton />;
+  // Spec 06: hold the skeleton back until loading crosses 250ms; the dimmed map
+  // fills the grace window so a fast fetch never flashes the shimmer.
+  const showSkeleton = useDelayedFlag(loading, 250);
+  if (loading && !showSkeleton)
+    return (
+      <View style={{ flex: 1 }}>
+        <MapCanvas style={{ opacity: 0.35 }} />
+      </View>
+    );
+  if (showSkeleton) return <MapLoadingSkeleton />;
   if (locationDenied) return <LocationDenied onChooseBeach={() => router.push('/beach-picker')} />;
 
   return (
@@ -258,7 +274,10 @@ export default function Map() {
 
       {/* bottom floating card — featured circle from the filtered set */}
       {featured && (
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.card}>
+        <Animated.View
+          entering={reducedMotion ? FadeIn.duration(240) : SlideInDown.springify().damping(18).stiffness(260)}
+          style={styles.card}
+        >
           <Card floating radius={24} pad={16}>
             <View style={styles.statusRow}>
               <StatusDot color={joined ? colors.live : featured.state === 'live' ? colors.live : colors.sunset} size={9} />

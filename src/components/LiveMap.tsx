@@ -6,6 +6,7 @@ import { View, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { MapMarker } from './MapMarker';
 import { colors } from '../theme';
+import { haptic } from '../theme/motion';
 import { TLV_COAST, USER_LOCATION, CIRCLE_MARKERS } from '../data/beaches';
 import type { CircleMarkerData } from '../data/beaches';
 import type { LiveMapProps } from './LiveMap.types';
@@ -51,7 +52,10 @@ function CircleMarker({
       coordinate={{ latitude: m.lat, longitude: m.lng }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={tracks}
-      onPress={() => onPress?.(m)}
+      onPress={() => {
+        haptic.medium(); // spec 03: marker select
+        onPress?.(m);
+      }}
     >
       <MapMarker
         state={m.state}
